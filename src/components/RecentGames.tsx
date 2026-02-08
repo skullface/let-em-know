@@ -95,14 +95,14 @@ export default function RecentGames({ title, games = [], focusTeamId, emptyMessa
   const list = Array.isArray(games) ? games : [];
   const summary = getSummarySentence(list, focusTeamId);
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-      <h2 className="text-xl font-bold mb-1 text-white">{title}</h2>
+    <div className="bg-gray-800 rounded-lg p-4">
+      <h2 className="text-xl font-bold mb-1 text-cavaliers-gold">{title}</h2>
       {summary && (
-        <p className="text-sm text-zinc-500 mb-4">{summary}</p>
+        <p className="text-sm text-gray-400 mb-4">{summary}</p>
       )}
       {!summary && list.length > 0 && <div className="mb-4" />}
       {list.length === 0 ? (
-        <p className="text-zinc-500 text-sm">{emptyMessage ?? 'No recent games available'}</p>
+        <p className="text-gray-400 text-sm">{emptyMessage ?? 'No recent games available'}</p>
       ) : (
         <div className="space-y-3">
           {list.map((game) => {
@@ -118,18 +118,18 @@ export default function RecentGames({ title, games = [], focusTeamId, emptyMessa
             return (
               <div
                 key={game.gameId}
-                className={`bg-zinc-800/50 border border-zinc-700/50 p-3 rounded border-l-4 ${
-                  result === 'W' ? 'border-l-green-500' : result === 'L' ? 'border-l-red-500' : 'border-l-transparent'
+                className={`bg-gray-700/50 p-3 rounded border-l-4 ${
+                  result === 'W' ? 'border-green-500' : result === 'L' ? 'border-red-500' : 'border-transparent'
                 }`}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm text-zinc-500">
+                  <span className="text-sm text-gray-400">
                     {formatGameDate(game.gameDate)}
                   </span>
                   {result && (
                     <span
                       className={`text-xs font-bold px-2 py-0.5 rounded ${
-                        result === 'W' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
+                        result === 'W' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
                       }`}
                     >
                       {result}
@@ -138,14 +138,14 @@ export default function RecentGames({ title, games = [], focusTeamId, emptyMessa
                 </div>
                 <div className="flex justify-between items-center">
                   <div className="flex-1">
-                    <div className="font-medium text-white">
+                    <div className="font-medium">
                       {awayLabel} @ {homeLabel}
                     </div>
                   </div>
                   {scoreText !== null && (
                     <div className="text-right">
-                      <div className="font-bold text-white">{scoreText}</div>
-                      <div className="text-xs text-zinc-500">{game.status}</div>
+                      <div className="font-bold">{scoreText}</div>
+                      <div className="text-xs text-gray-400">{game.status}</div>
                     </div>
                   )}
                 </div>

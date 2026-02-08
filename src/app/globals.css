@@ -1,7 +1,12 @@
 @import "tailwindcss";
 
+@theme {
+  --color-cavaliers-wine: #6F263D;
+  --color-cavaliers-gold: #FFB81C;
+}
+
 @layer base {
   body {
-    @apply bg-black text-white antialiased;
+    @apply bg-gray-900 text-gray-100;
   }
 }

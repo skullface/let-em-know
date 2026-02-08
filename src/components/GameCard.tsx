@@ -20,12 +20,12 @@ export default function GameCard({ game }: GameCardProps) {
   const isPast = gameDate < now;
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+    <div className="bg-linear-to-r from-cavaliers-wine to-gray-800 rounded-lg p-6 shadow-lg">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div className="mb-4 md:mb-0">
-          <div className="text-sm text-zinc-400 mb-2">
+          <div className="text-sm text-gray-300 mb-2">
             {isGameDay ? (
-              <span className="font-semibold text-white">TODAY</span>
+              <span className="text-cavaliers-gold font-semibold">TODAY</span>
             ) : (
               formatET(gameDate, {
                 weekday: "long",
@@ -35,7 +35,7 @@ export default function GameCard({ game }: GameCardProps) {
               })
             )}
           </div>
-          <div className="text-2xl font-bold text-white mb-2">
+          <div className="text-2xl font-bold mb-2">
             {formatET(gameDate, {
               hour: "numeric",
               minute: "2-digit",
@@ -43,20 +43,20 @@ export default function GameCard({ game }: GameCardProps) {
             })}{" "}
             ET
           </div>
-          <div className="text-lg text-zinc-300">
+          <div className="text-lg text-gray-300">
             {game.isHome ? "vs" : "@"} {game.opponent.teamCity}{" "}
             {game.opponent.teamName}
           </div>
-          <div className="text-sm text-zinc-500 mt-2">{game.location}</div>
+          <div className="text-sm text-gray-400 mt-2">{game.location}</div>
         </div>
         <div className="text-right">
           {!isPast && (
-            <div className="text-3xl font-bold text-white">
+            <div className="text-3xl font-bold text-cavaliers-gold">
               {formatDistance(gameDate, new Date(), { addSuffix: true })}
             </div>
           )}
           {isPast && (
-            <div className="text-xl font-semibold text-green-500">
+            <div className="text-xl font-semibold text-green-400">
               Game Started
             </div>
           )}

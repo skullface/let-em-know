@@ -41,12 +41,12 @@ export default async function Home() {
     const message =
       error instanceof Error ? error.message : "Unknown error occurred";
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-black">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center max-w-lg">
-          <h1 className="text-2xl font-bold text-white mb-4">
+          <h1 className="text-2xl font-bold text-cavaliers-gold mb-4">
             Error Loading Game Data
           </h1>
-          <p className="text-zinc-500 font-mono text-sm wrap-break-word">
+          <p className="text-gray-400 font-mono text-sm wrap-break-word">
             {message}
           </p>
         </div>
@@ -55,14 +55,14 @@ export default async function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-black">
+    <main className="min-h-screen bg-gray-900">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <header className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
+          <h1 className="text-4xl font-bold text-cavaliers-gold mb-2">
             Cleveland Cavaliers
           </h1>
-          <p className="text-zinc-500">Next Upcoming Game</p>
+          <p className="text-gray-400">Next Upcoming Game</p>
         </header>
 
         {/* Main Game Card */}
@@ -131,7 +131,7 @@ export default async function Home() {
         </div>
 
         {/* Footer */}
-        <footer className="text-center text-zinc-600 text-sm mt-12">
+        <footer className="text-center text-gray-500 text-sm mt-12">
           <p>Last updated: {new Date(nextGame.lastUpdated).toLocaleString()}</p>
         </footer>
       </div>
