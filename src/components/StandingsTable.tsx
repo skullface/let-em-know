@@ -1,4 +1,12 @@
-import { StandingsEntry } from '@/lib/nba/types';
+import { StandingsEntry } from "@/lib/nba/types";
+
+function ordinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
+}
+
+const MEDALS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
 interface StandingsTableProps {
   cavaliers: StandingsEntry;
@@ -10,55 +18,65 @@ export default function StandingsTable({
   opponent,
 }: StandingsTableProps) {
   return (
-    <div className="bg-gray-800 rounded-lg p-4">
-      <h2 className="text-xl font-bold mb-4 text-cavaliers-gold">Standings</h2>
-      <div className="space-y-4">
-        <StandingsRow
-          team={cavaliers}
-          label="Cavaliers"
-          isHighlighted={true}
-        />
-        <StandingsRow team={opponent} label={`${opponent.teamCity} ${opponent.teamName}`} />
+    <div className="">
+      <h2>Standings</h2>
+      <div className="grid grid-cols-2 gap-12">
+        <StandingsTeam team={cavaliers} label="Cavaliers" />
+        <StandingsTeam team={opponent} label={opponent.teamName} />
       </div>
     </div>
   );
 }
 
-function StandingsRow({
+const RANK_ITEMS: {
+  key: keyof Pick<
+    StandingsEntry,
+    "leagueRank" | "conferenceRank" | "divisionRank"
+  >;
+  label: (team: StandingsEntry) => string;
+}[] = [
+  { key: "leagueRank", label: () => "in the league" },
+  {
+    key: "conferenceRank",
+    label: (team) => `in ${team.conference} Conference`,
+  },
+  { key: "divisionRank", label: (team) => `in ${team.division} Division` },
+];
+
+function StandingsTeam({
   team,
   label,
-  isHighlighted = false,
 }: {
   team: StandingsEntry;
   label: string;
-  isHighlighted?: boolean;
 }) {
   return (
-    <div
-      className={`p-3 rounded ${
-        isHighlighted ? 'bg-cavaliers-wine/30' : 'bg-gray-700/50'
-      }`}
-    >
-      <div className="flex justify-between items-center mb-2">
-        <span className="font-semibold">{label}</span>
-        <span className="text-cavaliers-gold font-bold">
-          {team.wins}-{team.losses}
+    <div>
+      <div className="flex justify-between items-center">
+        <h3>{label}</h3>
+        <span aria-label={`Record: ${team.wins} wins, ${team.losses} losses`}>
+          {team.wins}–{team.losses}
         </span>
       </div>
-      <div className="grid grid-cols-3 gap-2 text-sm text-gray-300">
-        <div>
-          <span className="text-gray-400">Conference:</span> #{team.conferenceRank}
-        </div>
-        <div>
-          <span className="text-gray-400">Division:</span> #{team.divisionRank}
-        </div>
-        <div>
-          <span className="text-gray-400">League:</span> #{team.leagueRank}
-        </div>
-      </div>
-      <div className="mt-2 text-sm text-gray-400">
-        {team.conference} Conference • {team.division} Division
-      </div>
+      <ul>
+        {RANK_ITEMS.map(({ key, label: getLabel }) => {
+          const rank = team[key];
+          return (
+            <li
+              key={key}
+              className="flex flex-row items-center justify-between gap-1"
+            >
+              <span>
+                <span className="font-mono text-secondary">
+                  {ordinal(rank)}
+                </span>{" "}
+                {getLabel(team)}
+              </span>
+              {MEDALS[rank] && <span aria-hidden>{MEDALS[rank]}</span>}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
