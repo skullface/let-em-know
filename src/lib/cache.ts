@@ -20,7 +20,8 @@ const CACHE_TTL = {
   SCHEDULE: 6 * 60 * 60, // 6 hours
   STANDINGS: 6 * 60 * 60, // 6 hours
   INJURIES_NON_GAME_DAY: 6 * 60 * 60, // 6 hours
-  INJURIES_GAME_DAY: 30 * 60, // 30 minutes
+  INJURIES_GAME_DAY: 30 * 60, // 30 minutes (before 1pm ET on game day)
+  INJURIES_GAME_DAY_AFTER_1PM: 10 * 60, // 10 minutes (after 1pm ET on game day - newest PDF)
   OPPONENT_GAMES: 6 * 60 * 60, // 6 hours
   HEAD_TO_HEAD: 6 * 60 * 60, // 6 hours
   SCOREBOARD: 2 * 60, // 2 minutes

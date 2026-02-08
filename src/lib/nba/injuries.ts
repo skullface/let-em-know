@@ -2,258 +2,291 @@ import { InjuryEntry } from './types';
 import { getCached, setCached, CacheKeys, CACHE_TTL } from '../cache';
 import { format } from 'date-fns';
 
-const CBS_INJURIES_URL = 'https://www.cbssports.com/nba/injuries/';
+const NBA_INJURY_PAGE_URL =
+  'https://official.nba.com/nba-injury-report-2025-26-season/';
+const NBA_PDF_BASE = 'https://ak-static.cms.nba.com/referee/injury/';
 
-// CBS team abbreviation (from URL slug) -> NBA stats.nba.com team ID
-const CBS_ABBR_TO_TEAM_ID: Record<string, number> = {
-  ATL: 1610612737,
-  BOS: 1610612738,
-  CLE: 1610612739,
-  NOP: 1610612740,
-  NO: 1610612740,
-  CHI: 1610612741,
-  DAL: 1610612742,
-  DEN: 1610612743,
-  GSW: 1610612744,
-  GS: 1610612744,
-  HOU: 1610612745,
-  LAC: 1610612746,
-  LAL: 1610612747,
-  MIA: 1610612748,
-  MIL: 1610612749,
-  MIN: 1610612750,
-  BKN: 1610612751,
-  NYK: 1610612752,
-  NY: 1610612752,
-  ORL: 1610612753,
-  IND: 1610612754,
-  PHI: 1610612755,
-  PHX: 1610612756,
-  PHO: 1610612756,
-  POR: 1610612757,
-  SAC: 1610612758,
-  SAS: 1610612759,
-  OKC: 1610612760,
-  TOR: 1610612761,
-  UTA: 1610612762,
-  MEM: 1610612763,
-  WAS: 1610612764,
-  DET: 1610612765,
-  CHA: 1610612766,
+// NBA team name (from PDF) -> NBA stats.nba.com team ID
+const NBA_TEAM_NAME_TO_ID: Record<string, number> = {
+  'Atlanta Hawks': 1610612737,
+  'Boston Celtics': 1610612738,
+  'Brooklyn Nets': 1610612751,
+  'Charlotte Hornets': 1610612766,
+  'Chicago Bulls': 1610612741,
+  'Cleveland Cavaliers': 1610612739,
+  'Dallas Mavericks': 1610612742,
+  'Denver Nuggets': 1610612743,
+  'Detroit Pistons': 1610612765,
+  'Golden State Warriors': 1610612744,
+  'Houston Rockets': 1610612745,
+  'Indiana Pacers': 1610612754,
+  'LA Clippers': 1610612746,
+  'Los Angeles Clippers': 1610612746,
+  'Los Angeles Lakers': 1610612747,
+  'Memphis Grizzlies': 1610612763,
+  'Miami Heat': 1610612748,
+  'Milwaukee Bucks': 1610612749,
+  'Minnesota Timberwolves': 1610612750,
+  'New Orleans Pelicans': 1610612740,
+  'New York Knicks': 1610612752,
+  'Oklahoma City Thunder': 1610612760,
+  'Orlando Magic': 1610612753,
+  'Philadelphia 76ers': 1610612755,
+  'Phoenix Suns': 1610612756,
+  'Portland Trail Blazers': 1610612757,
+  'Sacramento Kings': 1610612758,
+  'San Antonio Spurs': 1610612759,
+  'Toronto Raptors': 1610612761,
+  'Utah Jazz': 1610612762,
+  'Washington Wizards': 1610612764,
 };
 
+const STATUSES: InjuryEntry['status'][] = [
+  'Out',
+  'Doubtful',
+  'Questionable',
+  'Probable',
+  'Available',
+];
+
 function mapStatus(text: string): InjuryEntry['status'] {
-  const t = text.toLowerCase();
-  if (t.includes('out for the season') || t.includes('out indefinitely')) return 'Out';
-  if (t.includes('out')) return 'Out';
-  if (t.includes('doubtful')) return 'Doubtful';
-  if (t.includes('game time decision') || t.includes('questionable') || t.includes('day to day')) return 'Questionable';
-  if (t.includes('probable')) return 'Probable';
-  if (t.includes('available') || t.includes('active')) return 'Available';
+  const t = text.trim();
+  for (const s of STATUSES) {
+    if (t === s || t.startsWith(s + ' ')) return s;
+  }
+  const lower = t.toLowerCase();
+  if (lower.includes('out')) return 'Out';
+  if (lower.includes('doubtful')) return 'Doubtful';
+  if (lower.includes('questionable') || lower.includes('game time decision'))
+    return 'Questionable';
+  if (lower.includes('probable')) return 'Probable';
+  if (lower.includes('available') || lower.includes('active')) return 'Available';
   return 'Questionable';
 }
 
-const LEAGUE_INJURIES_CACHE_KEY = 'nba:injuries:cbs';
-const LEAGUE_INJURIES_TTL = 30 * 60; // 30 min
+/** TTL in seconds: after 1pm game day = 10 min, before 1pm game day = 30 min, non-game day = 6h */
+export function getInjuryReportTtl(
+  reportDate: Date,
+  isGameDay: boolean
+): number {
+  if (!isGameDay) return CACHE_TTL.INJURIES_NON_GAME_DAY;
+  const etStr = new Date().toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+  });
+  const match = etStr.match(/(\d+):(\d+)/);
+  const hour = match ? parseInt(match[1], 10) : 12;
+  const isPM = /PM/i.test(etStr);
+  const hour24 = isPM && hour !== 12 ? hour + 12 : !isPM && hour === 12 ? 0 : hour;
+  return hour24 >= 13
+    ? CACHE_TTL.INJURIES_GAME_DAY_AFTER_1PM
+    : CACHE_TTL.INJURIES_GAME_DAY;
+}
+
+const LEAGUE_PDF_CACHE_PREFIX = 'nba:injuries:pdf:';
 
 export async function fetchInjuryReport(
   teamId: number,
-  _date: Date
+  reportDate: Date,
+  options?: { isGameDay?: boolean }
 ): Promise<InjuryEntry[]> {
-  const dateStr = format(_date, 'yyyy-MM-dd');
+  const dateStr = format(reportDate, 'yyyy-MM-dd');
   const cacheKey = CacheKeys.injuries(teamId, dateStr);
 
-  const cached = await getCached<InjuryEntry[]>(cacheKey);
-  if (cached && cached.length > 0) return cached;
+  const isGameDay = options?.isGameDay ?? false;
+  const ttl = getInjuryReportTtl(reportDate, isGameDay);
+  const leagueKey = `${LEAGUE_PDF_CACHE_PREFIX}${dateStr}`;
 
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[injuries] cache miss teamId=%s, fetching CBS', teamId);
-  }
-  const allByTeam = await fetchCbsInjuries();
-  const injuries = allByTeam.get(teamId) ?? [];
-  if (injuries.length > 0) {
-    await setCached(cacheKey, injuries, CACHE_TTL.INJURIES_NON_GAME_DAY);
-  }
+  const cached = await getCached<InjuryEntry[]>(cacheKey);
+  if (cached !== null) return cached;
+
+  const byTeam = await fetchNbaPdfInjuries(reportDate, leagueKey, ttl);
+  const injuries = byTeam.get(teamId) ?? [];
+  await setCached(cacheKey, injuries, ttl);
   return injuries;
 }
 
-/** Fetch CBS injuries page and return a map of teamId -> InjuryEntry[] */
-async function fetchCbsInjuries(): Promise<Map<number, InjuryEntry[]>> {
-  const cached = await getCached<Record<string, InjuryEntry[]>>(LEAGUE_INJURIES_CACHE_KEY);
-  if (cached && typeof cached === 'object' && Object.keys(cached).length > 0) {
+/** Fetch NBA injury page, get latest PDF URL for date, parse and return by teamId */
+async function fetchNbaPdfInjuries(
+  reportDate: Date,
+  leagueCacheKey: string,
+  ttlSeconds: number
+): Promise<Map<number, InjuryEntry[]>> {
+  type Cached = { byTeam: Record<string, InjuryEntry[]> };
+  const cached = await getCached<Cached>(leagueCacheKey);
+  if (cached && typeof cached === 'object' && Object.keys(cached.byTeam).length > 0) {
     if (process.env.NODE_ENV === 'development') {
-      console.log('[injuries] using cached CBS data (%s teams)', Object.keys(cached).length);
+      console.log('[injuries] using cached NBA PDF data');
     }
     return new Map(
-      Object.entries(cached).map(([k, v]) => [Number(k), v])
+      Object.entries(cached.byTeam).map(([k, v]) => [Number(k), v])
     );
   }
 
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[injuries] fetching CBS URL:', CBS_INJURIES_URL);
-  }
-  let html: string;
-  try {
-    const res = await fetch(CBS_INJURIES_URL, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        Accept:
-          'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-    });
-    if (!res.ok) {
-      console.warn('[injuries] CBS fetch failed:', res.status, res.statusText);
-      return new Map();
-    }
-    html = await res.text();
+  const pdfUrl = await getLatestPdfUrlForDate(reportDate);
+  if (!pdfUrl) {
     if (process.env.NODE_ENV === 'development') {
-      const hasTeams = html.includes('/nba/teams/');
-      console.log('[injuries] CBS response length=%s hasTeams=%s', html.length, hasTeams);
+      console.log('[injuries] no PDF URL found for date', format(reportDate, 'yyyy-MM-dd'));
     }
-  } catch (e) {
-    console.warn('[injuries] CBS fetch error:', e);
     return new Map();
   }
 
-  const byTeam = parseCbsInjuriesHtml(html);
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[injuries] fetching NBA PDF:', pdfUrl);
+  }
+
+  let byTeam: Map<number, InjuryEntry[]>;
+  try {
+    const res = await fetch(pdfUrl, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+      },
+    });
+    if (!res.ok) {
+      console.warn('[injuries] PDF fetch failed:', res.status, pdfUrl);
+      return new Map();
+    }
+    const buffer = await res.arrayBuffer();
+    const { pdf } = await import('pdf-parse');
+    const result = await pdf(Buffer.from(buffer));
+    const text = typeof (result as { text?: string })?.text === 'string' ? (result as { text: string }).text : '';
+    byTeam = parseNbaPdfText(text);
+  } catch (e) {
+    console.warn('[injuries] PDF fetch/parse error:', e);
+    return new Map();
+  }
+
+  const asPlain: Record<string, InjuryEntry[]> = {};
+  byTeam.forEach((entries, id) => {
+    asPlain[String(id)] = entries;
+  });
+  await setCached(leagueCacheKey, { byTeam: asPlain }, ttlSeconds);
+
   if (process.env.NODE_ENV === 'development') {
     const total = [...byTeam.values()].reduce((s, arr) => s + arr.length, 0);
-    console.log('[injuries] CBS parse: %s teams, %s total entries', byTeam.size, total);
-  }
-  if (byTeam.size > 0) {
-    const asPlain: Record<string, InjuryEntry[]> = {};
-    byTeam.forEach((entries, teamId) => {
-      asPlain[String(teamId)] = entries;
-    });
-    await setCached(LEAGUE_INJURIES_CACHE_KEY, asPlain, LEAGUE_INJURIES_TTL);
+    console.log('[injuries] NBA PDF parse: %s teams, %s total entries', byTeam.size, total);
   }
   return byTeam;
 }
 
-function parseCbsInjuriesHtml(html: string): Map<number, InjuryEntry[]> {
-  const byTeam = new Map<number, InjuryEntry[]>();
+/** Scrape NBA injury page for PDF links for the given date; return the latest PDF URL. */
+async function getLatestPdfUrlForDate(reportDate: Date): Promise<string | null> {
+  const dateStr = format(reportDate, 'yyyy-MM-dd');
 
-  // Primary: regex over raw HTML. Find each team's block (content after the team link, until next team).
-  const teamSlugRegex = /\/nba\/teams\/([A-Za-z]{2,3})\/[^"'\s]*/gi;
-  const teamMatches = [...html.matchAll(teamSlugRegex)];
-  const abbrToLastIndex = new Map<string, number>();
-  for (let i = 0; i < teamMatches.length; i++) {
-    const abbr = teamMatches[i][1].toUpperCase();
-    abbrToLastIndex.set(abbr, i);
-  }
-  for (const [abbr, lastIdx] of abbrToLastIndex) {
-    const teamId = CBS_ABBR_TO_TEAM_ID[abbr];
-    if (teamId == null) continue;
-    const start = teamMatches[lastIdx].index! + teamMatches[lastIdx][0].length;
-    const nextIdx = lastIdx + 1;
-    const end = teamMatches[nextIdx]?.index ?? html.length;
-    const block = html.slice(start, Math.min(end, start + 20000));
-    const entries = parseInjuryBlock(block);
-    if (entries.length) byTeam.set(teamId, entries);
-  }
-
-  if (byTeam.size > 0) return byTeam;
-
-  // Cheerio path when HTML has real table structure
   try {
-    const cheerio = require('cheerio');
-    const $ = cheerio.load(html);
-    const teamLinkRegex = /\/nba\/teams\/([A-Za-z]{2,3})\//i;
-    $('a[href*="/nba/teams/"]').each((_i: number, el: unknown) => {
-      const $el = $(el);
-      const href = $el.attr('href') || '';
-      const match = href.match(teamLinkRegex);
-      if (!match) return;
-      const abbr = match[1].toUpperCase();
-      const teamId = CBS_ABBR_TO_TEAM_ID[abbr];
-      if (teamId == null) return;
-      const $section = $el.closest('section, [class*="TeamSection"], [class*="injury"], div');
-      const $table = $section.length ? $section.find('table').first() : $el.siblings('table').first();
-      const $rows = $table.find('tbody tr, tr');
-      if ($rows.length === 0) return;
-      const list: InjuryEntry[] = [];
-      $rows.each((_ri: number, tr: unknown) => {
-        const $tr = $(tr);
-        const cells = $tr.find('td');
-        if (cells.length < 4) return;
-        const firstCell = cells.first();
-        const playerName = (firstCell.find('a').last().text() || firstCell.text()).trim();
-        if (!playerName || playerName === 'Player') return;
-        list.push({
-          playerName,
-          position: $(cells[1]).text().trim(),
-          status: mapStatus($(cells[4]).text().trim()),
-          reason: $(cells[3]).text().trim() || $(cells[4]).text().trim(),
-        });
-      });
-      if (list.length) byTeam.set(teamId, list);
+    const res = await fetch(NBA_INJURY_PAGE_URL, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
     });
-  } catch {
-    // ignore
+    if (!res.ok) return null;
+    const html = await res.text();
+    const matches = [...html.matchAll(/Injury-Report_(\d{4}-\d{2}-\d{2})_(\d{2})_(\d{2})(AM|PM)\.pdf/gi)];
+    const forDate = matches.filter((m) => m[1] === dateStr);
+    if (forDate.length === 0) {
+      return buildPdfUrlForDate(reportDate);
+    }
+    forDate.sort((a, b) => {
+      const [ah, am, ap] = [parseInt(a[2], 10), parseInt(a[3], 10), a[4].toUpperCase()];
+      const [bh, bm, bp] = [parseInt(b[2], 10), parseInt(b[3], 10), b[4].toUpperCase()];
+      const aMin = (ap === 'PM' && ah !== 12 ? ah + 12 : ap === 'AM' && ah === 12 ? 0 : ah) * 60 + am;
+      const bMin = (bp === 'PM' && bh !== 12 ? bh + 12 : bp === 'AM' && bh === 12 ? 0 : bh) * 60 + bm;
+      return aMin - bMin;
+    });
+    const last = forDate[forDate.length - 1];
+    const filename = `Injury-Report_${last[1]}_${last[2]}_${last[3]}${last[4]}.pdf`;
+    return `${NBA_PDF_BASE}${filename}`;
+  } catch (e) {
+    console.warn('[injuries] failed to scrape NBA page for PDF links:', e);
+    return buildPdfUrlForDate(reportDate);
+  }
+}
+
+/** Build PDF URL for the newest 15-min slot up to now (ET). Fallback when scrape fails. */
+function buildPdfUrlForDate(reportDate: Date): string | null {
+  const etStr = new Date().toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+  });
+  const match = etStr.match(/(\d+):(\d+):?\d*\s*(AM|PM)/i);
+  if (!match) return null;
+  let hour24 = parseInt(match[1], 10);
+  const min = parseInt(match[2], 10);
+  if (match[3].toUpperCase() === 'PM' && hour24 !== 12) hour24 += 12;
+  if (match[3].toUpperCase() === 'AM' && hour24 === 12) hour24 = 0;
+  const minRounded = Math.floor(min / 15) * 15;
+  const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+  const ampm = hour24 >= 12 ? 'PM' : 'AM';
+  const dateStr = format(reportDate, 'yyyy-MM-dd');
+  const filename = `Injury-Report_${dateStr}_${hour12.toString().padStart(2, '0')}_${minRounded.toString().padStart(2, '0')}${ampm}.pdf`;
+  return `${NBA_PDF_BASE}${filename}`;
+}
+
+/** Parse PDF text into teamId -> InjuryEntry[]. */
+function parseNbaPdfText(text: string): Map<number, InjuryEntry[]> {
+  const byTeam = new Map<number, InjuryEntry[]>();
+  const lines = text.split(/\r?\n/).map((l) => l.trim());
+
+  let currentTeamId: number | null = null;
+  let pendingReason: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line) continue;
+    if (/^Injury Report:/.test(line) || /^Page \d+ of \d+/.test(line)) continue;
+    if (/^Game Date\s+Game Time\s+Matchup/.test(line)) continue;
+    if (line === 'NOT YET SUBMITTED') {
+      pendingReason = [];
+      continue;
+    }
+
+    const teamId = NBA_TEAM_NAME_TO_ID[line];
+    if (teamId != null) {
+      currentTeamId = teamId;
+      pendingReason = [];
+      continue;
+    }
+
+    if (currentTeamId == null) continue;
+
+    const statusMatch = line.match(
+      new RegExp(
+        `^(.+?)\\s+(${STATUSES.join('|')})(?:\\s+(.*))?$`,
+        'i'
+      )
+    );
+    if (statusMatch) {
+      const [, namePart, status, reasonPart] = statusMatch;
+      const playerName = namePart?.trim().replace(/\s+/g, ' ') ?? '';
+      if (!playerName || playerName.length < 2) continue;
+      let reason = reasonPart?.trim() ?? '';
+      if (pendingReason.length) {
+        reason = (reason + ' ' + pendingReason.join(' ')).trim();
+        pendingReason = [];
+      }
+      const entry: InjuryEntry = {
+        playerName,
+        position: '',
+        status: mapStatus(status),
+        reason,
+      };
+      const list = byTeam.get(currentTeamId) ?? [];
+      list.push(entry);
+      byTeam.set(currentTeamId, list);
+      continue;
+    }
+
+    if (/^[A-Za-z\d\s\/\-',.;()]+$/i.test(line) && !/^\d{2}\/\d{2}\/\d{4}\s+\d{1,2}:\d{2}\s+\(ET\)/.test(line)) {
+      const list = byTeam.get(currentTeamId);
+      if (list?.length) {
+        const last = list[list.length - 1];
+        last.reason = (last.reason + ' ' + line).trim();
+      } else {
+        pendingReason.push(line);
+      }
+    }
   }
 
   return byTeam;
-}
-
-/** Parse one team's block: HTML table rows or pipe-separated lines */
-function parseInjuryBlock(block: string): InjuryEntry[] {
-  const entries: InjuryEntry[] = [];
-
-  // HTML: <tr>...<td>...<a>Short</a><a>Full Name</a>...</td><td>Pos</td><td>Date</td><td>Injury</td><td>Status</td>...
-  const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-  let rowMatch: RegExpExecArray | null;
-  while ((rowMatch = rowRegex.exec(block)) !== null) {
-    const rowHtml = rowMatch[1];
-    const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
-    const tdContents: string[] = [];
-    let tdMatch: RegExpExecArray | null;
-    while ((tdMatch = tdRegex.exec(rowHtml)) !== null) {
-      tdContents.push(tdMatch[1]);
-    }
-    if (tdContents.length < 5) continue;
-    const firstCellHtml = tdContents[0];
-    const linksInFirst = [...firstCellHtml.matchAll(/<a[^>]*>([^<]+)<\/a>/g)];
-    const playerName = (linksInFirst.length >= 2
-      ? linksInFirst[linksInFirst.length - 1][1]
-      : linksInFirst[0]?.[1] || stripTags(firstCellHtml)).trim();
-    if (!playerName || playerName === 'Player') continue;
-    entries.push({
-      playerName: playerName.replace(/\s+/g, ' '),
-      position: stripTags(tdContents[1]),
-      status: mapStatus(stripTags(tdContents[4])),
-      reason: stripTags(tdContents[3]) || stripTags(tdContents[4]),
-    });
-  }
-
-  if (entries.length > 0) return entries;
-
-  // Pipe-separated (e.g. from some proxies or text version)
-  for (const line of block.split(/\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || !trimmed.includes('|')) continue;
-    const parts = trimmed.split('|').map((p) => p.trim());
-    if (parts.length < 5) continue;
-    const playerName = extractPlayerName(parts[0]);
-    if (!playerName || playerName === 'Player') continue;
-    entries.push({
-      playerName,
-      position: parts[1] || '',
-      status: mapStatus(parts[4] || ''),
-      reason: parts[3] || parts[4] || '',
-    });
-  }
-  return entries;
-}
-
-function stripTags(html: string): string {
-  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
-function extractPlayerName(cell: string): string {
-  const stripped = cell.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim();
-  const parts = stripped.split(/\]\s*\[?/);
-  const lastPart = parts[parts.length - 1]?.trim() || stripped;
-  return lastPart.replace(/^\[/, '').trim() || stripped;
 }

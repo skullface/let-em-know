@@ -78,8 +78,8 @@ export async function GET() {
       opponentInjuriesResult,
     ] = await Promise.allSettled([
       fetchStandings(),
-      fetchInjuryReport(CAVALIERS_TEAM_ID, gameDate),
-      fetchInjuryReport(opponent.teamId, gameDate),
+      fetchInjuryReport(CAVALIERS_TEAM_ID, gameDate, { isGameDay }),
+      fetchInjuryReport(opponent.teamId, gameDate, { isGameDay }),
     ]);
 
     if (DEBUG) {
