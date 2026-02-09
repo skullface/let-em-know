@@ -62,7 +62,7 @@ export interface StandingsEntry {
 
 export interface InjuryEntry {
   playerName: string;
-  position: string;
+  position?: string;
   status: 'Out' | 'Questionable' | 'Probable' | 'Available' | 'Doubtful';
   reason: string;
   dateReported?: string;

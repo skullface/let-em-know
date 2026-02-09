@@ -87,21 +87,28 @@ const LEAGUE_PDF_CACHE_PREFIX = 'nba:injuries:pdf:';
 export async function fetchInjuryReport(
   teamId: number,
   reportDate: Date,
-  options?: { isGameDay?: boolean }
+  options?: { isGameDay?: boolean; skipCache?: boolean }
 ): Promise<InjuryEntry[]> {
   const dateStr = format(reportDate, 'yyyy-MM-dd');
   const cacheKey = CacheKeys.injuries(teamId, dateStr);
 
   const isGameDay = options?.isGameDay ?? false;
   const ttl = getInjuryReportTtl(reportDate, isGameDay);
-  const leagueKey = `${LEAGUE_PDF_CACHE_PREFIX}${dateStr}`;
+  const skipCache = options?.skipCache ?? false;
+  const leagueKey = skipCache
+    ? `${LEAGUE_PDF_CACHE_PREFIX}${dateStr}:nocache:${Date.now()}`
+    : `${LEAGUE_PDF_CACHE_PREFIX}${dateStr}`;
 
-  const cached = await getCached<InjuryEntry[]>(cacheKey);
-  if (cached !== null) return cached;
+  if (!skipCache) {
+    const cached = await getCached<InjuryEntry[]>(cacheKey);
+    if (cached !== null) return cached;
+  }
 
   const byTeam = await fetchNbaPdfInjuries(reportDate, leagueKey, ttl);
   const injuries = byTeam.get(teamId) ?? [];
-  await setCached(cacheKey, injuries, ttl);
+  if (!skipCache) {
+    await setCached(cacheKey, injuries, ttl);
+  }
   return injuries;
 }
 
@@ -147,6 +154,11 @@ async function fetchNbaPdfInjuries(
       return new Map();
     }
     const buffer = await res.arrayBuffer();
+    // pdf-parse uses pdfjs-dist which expects DOMMatrix (browser API); polyfill for Node
+    if (typeof globalThis.DOMMatrix === 'undefined') {
+      const CSSMatrix = (await import('dommatrix')).default;
+      (globalThis as unknown as { DOMMatrix: unknown }).DOMMatrix = CSSMatrix;
+    }
     const { pdf } = await import('pdf-parse');
     const result = await pdf(Buffer.from(buffer));
     const text = typeof (result as { text?: string })?.text === 'string' ? (result as { text: string }).text : '';
@@ -169,9 +181,17 @@ async function fetchNbaPdfInjuries(
   return byTeam;
 }
 
+/** PDF filenames use the report date's calendar year (e.g. 2026-02-08 for Feb 8, 2026). */
+function getPdfDateStr(reportDate: Date): string {
+  const y = reportDate.getFullYear();
+  const mo = String(reportDate.getMonth() + 1).padStart(2, '0');
+  const day = String(reportDate.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${day}`;
+}
+
 /** Scrape NBA injury page for PDF links for the given date; return the latest PDF URL. */
 async function getLatestPdfUrlForDate(reportDate: Date): Promise<string | null> {
-  const dateStr = format(reportDate, 'yyyy-MM-dd');
+  const pdfDateStr = getPdfDateStr(reportDate);
 
   try {
     const res = await fetch(NBA_INJURY_PAGE_URL, {
@@ -183,8 +203,9 @@ async function getLatestPdfUrlForDate(reportDate: Date): Promise<string | null> 
     });
     if (!res.ok) return null;
     const html = await res.text();
-    const matches = [...html.matchAll(/Injury-Report_(\d{4}-\d{2}-\d{2})_(\d{2})_(\d{2})(AM|PM)\.pdf/gi)];
-    const forDate = matches.filter((m) => m[1] === dateStr);
+    // Hour can be 1 or 2 digits on the NBA page (e.g. 6_30PM, 12_00PM)
+    const matches = [...html.matchAll(/Injury-Report_(\d{4}-\d{2}-\d{2})_(\d{1,2})_(\d{2})(AM|PM)\.pdf/gi)];
+    const forDate = matches.filter((m) => m[1] === pdfDateStr);
     if (forDate.length === 0) {
       return buildPdfUrlForDate(reportDate);
     }
@@ -218,9 +239,64 @@ function buildPdfUrlForDate(reportDate: Date): string | null {
   const minRounded = Math.floor(min / 15) * 15;
   const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
   const ampm = hour24 >= 12 ? 'PM' : 'AM';
-  const dateStr = format(reportDate, 'yyyy-MM-dd');
-  const filename = `Injury-Report_${dateStr}_${hour12.toString().padStart(2, '0')}_${minRounded.toString().padStart(2, '0')}${ampm}.pdf`;
+  const pdfDateStr = getPdfDateStr(reportDate);
+  const filename = `Injury-Report_${pdfDateStr}_${hour12.toString().padStart(2, '0')}_${minRounded.toString().padStart(2, '0')}${ampm}.pdf`;
   return `${NBA_PDF_BASE}${filename}`;
+}
+
+/** Team names sorted by length descending so we match "New York Knicks" before "Knicks" etc. */
+const TEAM_NAMES_LONGEST_FIRST = Object.keys(NBA_TEAM_NAME_TO_ID).sort(
+  (a, b) => b.length - a.length
+);
+
+const PLAYER_LINE_REGEX = new RegExp(
+  `^(.+?)\\s+(${STATUSES.join('|')})(?:\\s+(.*))?$`,
+  'i'
+);
+
+/** PDF uses "Lastname, Firstname"; normalize to "Firstname Lastname". */
+function normalizePlayerName(name: string): string {
+  const commaIdx = name.indexOf(',');
+  if (commaIdx === -1) return name.trim();
+  const last = name.slice(0, commaIdx).trim();
+  const first = name.slice(commaIdx + 1).trim();
+  return first ? `${first} ${last}` : last;
+}
+
+function tryParsePlayerLine(
+  line: string
+): { playerName: string; status: string; reason: string } | null {
+  const statusMatch = line.match(PLAYER_LINE_REGEX);
+  if (!statusMatch) return null;
+  const [, namePart, status, reasonPart] = statusMatch;
+  const rawName = namePart?.trim().replace(/\s+/g, ' ') ?? '';
+  if (!rawName || rawName.length < 2) return null;
+  const playerName = normalizePlayerName(rawName);
+  return {
+    playerName,
+    status,
+    reason: reasonPart?.trim() ?? '',
+  };
+}
+
+function pushInjuryEntry(
+  byTeam: Map<number, InjuryEntry[]>,
+  currentTeamId: number,
+  parsed: { playerName: string; status: string; reason: string },
+  pendingReason: string[]
+): void {
+  let reason = parsed.reason;
+  if (pendingReason.length) {
+    reason = (reason + ' ' + pendingReason.join(' ')).trim();
+  }
+  const entry: InjuryEntry = {
+    playerName: parsed.playerName,
+    status: mapStatus(parsed.status),
+    reason,
+  };
+  const list = byTeam.get(currentTeamId) ?? [];
+  list.push(entry);
+  byTeam.set(currentTeamId, list);
 }
 
 /** Parse PDF text into teamId -> InjuryEntry[]. */
@@ -241,39 +317,42 @@ function parseNbaPdfText(text: string): Map<number, InjuryEntry[]> {
       continue;
     }
 
-    const teamId = NBA_TEAM_NAME_TO_ID[line];
-    if (teamId != null) {
-      currentTeamId = teamId;
+    // Exact match: whole line is a team name
+    const exactTeamId = NBA_TEAM_NAME_TO_ID[line];
+    if (exactTeamId != null) {
+      currentTeamId = exactTeamId;
       pendingReason = [];
       continue;
     }
 
+    // PDF often has "Game Time (ET) HOME@AWAY Team Name First Player Status Reason" on one line
+    let foundTeamInLine = false;
+    for (const teamName of TEAM_NAMES_LONGEST_FIRST) {
+      const idx = line.indexOf(teamName);
+      if (idx === -1) continue;
+      const teamId = NBA_TEAM_NAME_TO_ID[teamName];
+      if (teamId == null) continue;
+      currentTeamId = teamId;
+      pendingReason = [];
+      foundTeamInLine = true;
+      const rest = line.slice(idx + teamName.length).trim();
+      if (rest && rest !== 'NOT YET SUBMITTED') {
+        const parsed = tryParsePlayerLine(rest);
+        if (parsed) {
+          pushInjuryEntry(byTeam, currentTeamId, parsed, pendingReason);
+          pendingReason = [];
+        }
+      }
+      break;
+    }
+    if (foundTeamInLine) continue;
+
     if (currentTeamId == null) continue;
 
-    const statusMatch = line.match(
-      new RegExp(
-        `^(.+?)\\s+(${STATUSES.join('|')})(?:\\s+(.*))?$`,
-        'i'
-      )
-    );
-    if (statusMatch) {
-      const [, namePart, status, reasonPart] = statusMatch;
-      const playerName = namePart?.trim().replace(/\s+/g, ' ') ?? '';
-      if (!playerName || playerName.length < 2) continue;
-      let reason = reasonPart?.trim() ?? '';
-      if (pendingReason.length) {
-        reason = (reason + ' ' + pendingReason.join(' ')).trim();
-        pendingReason = [];
-      }
-      const entry: InjuryEntry = {
-        playerName,
-        position: '',
-        status: mapStatus(status),
-        reason,
-      };
-      const list = byTeam.get(currentTeamId) ?? [];
-      list.push(entry);
-      byTeam.set(currentTeamId, list);
+    const parsed = tryParsePlayerLine(line);
+    if (parsed) {
+      pushInjuryEntry(byTeam, currentTeamId, parsed, pendingReason);
+      pendingReason = [];
       continue;
     }
 

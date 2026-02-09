@@ -49,6 +49,8 @@ export async function GET() {
     const isHome = isHomeGame(nextGame);
     const gameDate = new Date(nextGame.gameDateTimeEst);
     const isGameDay = isSameDay(gameDate, new Date());
+    // Injury PDFs are published by calendar day (today); use today in ET so we get the latest report
+    const injuryReportDate = getTodayInEt();
 
     // Cavaliers and opponent recent games: use schedule (correct dates + both scores); fallback to API only if schedule has none
     let cavaliersRecentGames = getOpponentRecentGamesFromSchedule(schedule, CAVALIERS_TEAM_ID, 3);
@@ -78,8 +80,8 @@ export async function GET() {
       opponentInjuriesResult,
     ] = await Promise.allSettled([
       fetchStandings(),
-      fetchInjuryReport(CAVALIERS_TEAM_ID, gameDate, { isGameDay }),
-      fetchInjuryReport(opponent.teamId, gameDate, { isGameDay }),
+      fetchInjuryReport(CAVALIERS_TEAM_ID, injuryReportDate, { isGameDay }),
+      fetchInjuryReport(opponent.teamId, injuryReportDate, { isGameDay }),
     ]);
 
     if (DEBUG) {
@@ -291,4 +293,12 @@ function isSameDay(date1: Date, date2: Date): boolean {
     date1.getMonth() === date2.getMonth() &&
     date1.getDate() === date2.getDate()
   );
+}
+
+/** Today's date in Eastern time (for injury report PDF date matching). */
+function getTodayInEt(): Date {
+  const et = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
+  const [datePart] = et.split(',');
+  const [month, day, year] = datePart.trim().split('/').map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0);
 }
