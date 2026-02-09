@@ -1,4 +1,17 @@
+import { cva } from "class-variance-authority";
 import { InjuryEntry } from "@/lib/nba/types";
+
+const injuryStatus = cva("", {
+  variants: {
+    status: {
+      Out: "text-red-400",
+      Questionable: "text-yellow-400",
+      Doubtful: "text-orange-400",
+      Probable: "text-green-400",
+      Available: "text-green-300",
+    },
+  },
+});
 
 interface InjuryReportProps {
   cavaliers: InjuryEntry[];
@@ -39,14 +52,6 @@ function InjurySection({
     );
   }
 
-  const statusColors: Record<InjuryEntry["status"], string> = {
-    Out: "text-red-400",
-    Questionable: "text-yellow-400",
-    Doubtful: "text-orange-400",
-    Probable: "text-green-400",
-    Available: "text-green-300",
-  };
-
   return (
     <div>
       <h3>{team}</h3>
@@ -60,7 +65,7 @@ function InjurySection({
                   {injury.jerseyNumber ? <>#{injury.jerseyNumber}</> : <>#</>}
                 </span>
               </span>
-              <span className={`${statusColors[injury.status]}`}>
+              <span className={injuryStatus({ status: injury.status })}>
                 {injury.status}
               </span>
             </li>
