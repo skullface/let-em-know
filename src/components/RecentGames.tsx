@@ -1,5 +1,6 @@
 import { GameSummary, TeamInfo } from '@/lib/nba/types';
 import { format } from 'date-fns';
+import Section from '@/components/Section';
 
 interface RecentGamesProps {
   title: string;
@@ -95,8 +96,7 @@ export default function RecentGames({ title, games = [], focusTeamId, emptyMessa
   const list = Array.isArray(games) ? games : [];
   const summary = getSummarySentence(list, focusTeamId);
   return (
-    <div className="bg-gray-800 rounded-lg p-4">
-      <h2 className="text-xl font-bold mb-1 text-cavaliers-gold">{title}</h2>
+    <Section title={title} headingClassName="text-xl font-bold mb-1 text-cavaliers-gold">
       {summary && (
         <p className="text-sm text-gray-400 mb-4">{summary}</p>
       )}
@@ -154,6 +154,6 @@ export default function RecentGames({ title, games = [], focusTeamId, emptyMessa
           })}
         </div>
       )}
-    </div>
+    </Section>
   );
 }

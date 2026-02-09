@@ -2,6 +2,7 @@
 
 import { GameSummary, TeamInfo, LastH2HBoxScore } from '@/lib/nba/types';
 import { format } from 'date-fns';
+import Section from '@/components/Section';
 
 interface HeadToHeadSectionProps {
   headToHead: GameSummary[];
@@ -159,10 +160,7 @@ export default function HeadToHeadSection({
     : 'No matchups available this season.';
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4">
-      <h2 className="text-xl font-bold mb-4 text-cavaliers-gold">
-        Head-to-Head This Season
-      </h2>
+    <Section title="Head-to-Head This Season">
       {list.length === 0 ? (
         <p className="text-gray-400 text-sm">{emptyMessage ?? defaultEmptyMessage}</p>
       ) : (
@@ -179,6 +177,6 @@ export default function HeadToHeadSection({
           ))}
         </div>
       )}
-    </div>
+    </Section>
   );
 }

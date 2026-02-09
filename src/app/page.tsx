@@ -65,32 +65,32 @@ export default async function Home() {
           <p className="text-gray-400">Next Upcoming Game</p>
         </header>
 
-        {/* Main Game Card */}
-        <div className="mb-8">
+        <div className="grid grid-cols-1 gap-8">
           <GameCard game={nextGame.game} />
-        </div>
 
-        {/* Broadcast Info */}
-        <div className="mb-8">
           <BroadcastInfo broadcasts={nextGame.game.broadcasts} />
-        </div>
 
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Standings */}
-          <div>
-            <StandingsTable
-              cavaliers={nextGame.standings.cavaliers}
-              opponent={nextGame.standings.opponent}
+          <StandingsTable
+            cavaliers={nextGame.standings.cavaliers}
+            opponent={nextGame.standings.opponent}
+          />
+
+          <InjuryReport
+            cavaliers={nextGame.injuries.cavaliers}
+            opponent={nextGame.injuries.opponent}
+            opponentName={nextGame.game.opponent.teamCity}
+          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <RecentGames
+              title="Cavaliers Last 3 Games"
+              games={nextGame.cavaliersRecentGames}
+              focusTeamId={1610612739}
             />
-          </div>
-
-          {/* Injuries */}
-          <div>
-            <InjuryReport
-              cavaliers={nextGame.injuries.cavaliers}
-              opponent={nextGame.injuries.opponent}
-              opponentName={nextGame.game.opponent.teamCity}
+            <RecentGames
+              title={`${nextGame.game.opponent.teamCity} Last 3 Games`}
+              games={nextGame.opponentRecentGames}
+              focusTeamId={nextGame.game.opponent.teamId}
             />
           </div>
         </div>
@@ -109,22 +109,11 @@ export default async function Home() {
           />
         </div>
 
-        {/* Recent Games */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <RecentGames
-            title="Cavaliers Last 3 Games"
-            games={nextGame.cavaliersRecentGames}
-            focusTeamId={1610612739}
-          />
-          <RecentGames
-            title={`${nextGame.game.opponent.teamCity} Last 3 Games`}
-            games={nextGame.opponentRecentGames}
-            focusTeamId={nextGame.game.opponent.teamId}
-          />
-        </div>
         <div className="mb-8">
           <HeadToHeadSection
-            headToHead={Array.isArray(nextGame.headToHead) ? nextGame.headToHead : []}
+            headToHead={
+              Array.isArray(nextGame.headToHead) ? nextGame.headToHead : []
+            }
             lastHeadToHeadBoxScore={nextGame.lastHeadToHeadBoxScore ?? null}
             opponentName={nextGame.game?.opponent?.teamCity ?? undefined}
           />

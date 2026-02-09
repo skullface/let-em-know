@@ -1,4 +1,5 @@
 import { StandingsEntry } from "@/lib/nba/types";
+import Section from "@/components/Section";
 
 function ordinal(n: number): string {
   const s = ["th", "st", "nd", "rd"];
@@ -18,13 +19,12 @@ export default function StandingsTable({
   opponent,
 }: StandingsTableProps) {
   return (
-    <div className="">
-      <h2>Standings</h2>
+    <Section title="Standings">
       <div className="grid grid-cols-2 gap-12">
         <StandingsTeam team={cavaliers} label="Cavaliers" />
         <StandingsTeam team={opponent} label={opponent.teamName} />
       </div>
-    </div>
+    </Section>
   );
 }
 

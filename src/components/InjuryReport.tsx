@@ -1,5 +1,6 @@
 import { cva } from "class-variance-authority";
 import { InjuryEntry } from "@/lib/nba/types";
+import Section from "@/components/Section";
 
 const injuryStatus = cva("", {
   variants: {
@@ -25,13 +26,12 @@ export default function InjuryReport({
   opponentName,
 }: InjuryReportProps) {
   return (
-    <div>
-      <h2>Injury report</h2>
+    <Section title="Injury report">
       <div className="grid grid-cols-2 gap-12">
         <InjurySection team="Cavaliers" injuries={cavaliers} />
         <InjurySection team={opponentName} injuries={opponent} />
       </div>
-    </div>
+    </Section>
   );
 }
 
