@@ -1,4 +1,5 @@
 import { cva } from "class-variance-authority";
+import { cn } from "@/lib/utils";
 
 const playerRow = cva("flex justify-between mb-1");
 
@@ -27,9 +28,10 @@ export default function PlayerRow({
           )}
         </span>
         <span
-          className={`w-[3ch] font-mono ${
+          className={cn(
+            "w-[3ch] font-mono",
             highlight ? "text-green-500" : "text-secondary"
-          }`}
+          )}
         >
           {jerseyNumber != null && jerseyNumber !== "" ? (
             <>#{jerseyNumber}</>
@@ -38,7 +40,9 @@ export default function PlayerRow({
           )}
         </span>
       </span>
-      <span className={highlight ? "text-green-500" : undefined}>{right}</span>
+      <span className={cn("font-mono", highlight && "text-green-500")}>
+        {right}
+      </span>
     </li>
   );
 }

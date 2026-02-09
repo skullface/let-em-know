@@ -62,13 +62,13 @@ function StandingsTeam({
           {team.wins}–{team.losses}
         </span>
       </div>
-      <ul>
+      <ul className="grid grid-cols-1 gap-1">
         {RANK_ITEMS.map(({ key, label: getLabel }) => {
           const rank = team[key];
           return (
             <li
               key={key}
-              className="flex flex-row items-center justify-between gap-1"
+              className="flex flex-row items-center justify-between gap-2"
             >
               <span>
                 <span className="font-mono text-secondary">

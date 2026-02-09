@@ -46,6 +46,7 @@ function TopPerformersBlock({
       personId: number;
       value: number;
       jerseyNumber?: string;
+      position?: string;
     }>,
     gameHighPersonId: number | null,
     valueSuffix: string
@@ -58,9 +59,11 @@ function TopPerformersBlock({
           jerseyNumber={p.jerseyNumber}
           highlight={p.personId === gameHighPersonId}
           right={
-            <span className="font-mono uppercase">
-              {p.value} {valueSuffix}
-            </span>
+            p.position ?? (
+              <span className="font-mono uppercase">
+                {p.value} {valueSuffix}
+              </span>
+            )
           }
         />
       ))}
@@ -75,12 +78,14 @@ function TopPerformersBlock({
       personId: number;
       value: number;
       jerseyNumber?: string;
+      position?: string;
     }>,
     awayPlayers: Array<{
       playerName: string;
       personId: number;
       value: number;
       jerseyNumber?: string;
+      position?: string;
     }>,
     gameHighPersonId: number | null,
     valueSuffix: string
