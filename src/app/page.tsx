@@ -2,8 +2,8 @@ import { NextGameResponse } from "@/lib/nba/types";
 import GameCard from "@/components/GameCard";
 import StandingsTable from "@/components/StandingsTable";
 import InjuryReport from "@/components/InjuryReport";
-import LineupCard from "@/components/LineupCard";
 import RecentGames from "@/components/RecentGames";
+import StartingLineupSection from "@/components/StartingLineupSection";
 import HeadToHeadSection from "@/components/HeadToHeadSection";
 
 async function getNextGame(): Promise<NextGameResponse> {
@@ -83,18 +83,12 @@ export default async function Home() {
           opponentName={nextGame.game?.opponent?.teamName ?? undefined}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <LineupCard
-            teamName="Cavaliers"
-            players={nextGame.projectedLineups.cavaliers}
-            isHome={nextGame.game.isHome}
-          />
-          <LineupCard
-            teamName={nextGame.game.opponent.teamName}
-            players={nextGame.projectedLineups.opponent}
-            isHome={!nextGame.game.isHome}
-          />
-        </div>
+        <StartingLineupSection
+          cavaliersPlayers={nextGame.projectedLineups.cavaliers}
+          opponentPlayers={nextGame.projectedLineups.opponent}
+          opponentName={nextGame.game.opponent.teamName}
+          isHome={nextGame.game.isHome}
+        />
       </main>
 
       {/* Footer */}
