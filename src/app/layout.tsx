@@ -1,9 +1,9 @@
-import type { Metadata } from 'next';
-import './globals.css';
+import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: 'Next Ball - Cleveland Cavaliers',
-  description: 'Next upcoming game information for the Cleveland Cavaliers',
+  title: "Next Ball - Cleveland Cavaliers",
+  description: "Next upcoming game information for the Cleveland Cavaliers",
 };
 
 export default function RootLayout({
@@ -13,7 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-gray-900 text-white antialiased">{children}</body>
+      <body className="bg-surface text-foreground antialiased">{children}</body>
     </html>
   );
 }

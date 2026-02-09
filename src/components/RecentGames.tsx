@@ -125,12 +125,14 @@ export function RecentGamesData({
       <Subheading>{title}</Subheading>
       <div className="flex flex-col-reverse gap-2">
         {summary && (
-          <p className="text-secondary font-mono text-sm italic">{summary}.</p>
+          <p className="text-secondary text-sm mt-5 pt-3 border-t border-subtle">
+            {summary}.
+          </p>
         )}
         {list.length === 0 ? (
           <p>{emptyMessage ?? "No recent games available."}</p>
         ) : (
-          <ul>
+          <ul className="flex flex-col gap-4">
             {list.map((game) => (
               <li key={game.gameId}>
                 <GameRow game={game} />

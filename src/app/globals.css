@@ -1,12 +1,25 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cavaliers-wine: #6F263D;
-  --color-cavaliers-gold: #FFB81C;
+  --color-surface: #fff;
+  --color-foreground: #000;
+  --color-secondary: #444;
+  --color-subtle: #eee;
+  --font-size-sm: 10px;
+  --font-size-base: 13px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface: #000;
+    --color-foreground: #fff;
+    --color-secondary: #aaa;
+    --color-subtle: #222;
+  }
 }
 
 @layer base {
-  body {
-    @apply bg-gray-900 text-gray-100;
+  html {
+    font-size: var(--font-size-base);
   }
 }

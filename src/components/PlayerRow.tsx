@@ -19,15 +19,17 @@ export default function PlayerRow({
 }: PlayerRowProps) {
   return (
     <li className={playerRow()}>
-      <span className="font-medium flex flex-row-reverse gap-2">
-        <span className="flex items-center gap-2 text-inherit">
+      <span className="flex flex-row-reverse gap-3">
+        <span className="flex items-center gap-1.5 text-inherit">
           {playerName}
           {highlight && (
             <span className="rounded-full w-2 h-2 bg-green-500 block" />
           )}
         </span>
         <span
-          className={`w-[3ch] font-mono ${highlight ? "text-green-500" : "text-secondary"}`}
+          className={`w-[3ch] font-mono ${
+            highlight ? "text-green-500" : "text-secondary"
+          }`}
         >
           {jerseyNumber != null && jerseyNumber !== "" ? (
             <>#{jerseyNumber}</>

@@ -49,7 +49,7 @@ function InjurySection({
     return (
       <div>
         <Subheading>{team}</Subheading>
-        <p>No injuries reported</p>
+        <p className="text-secondary">No injuries reported.</p>
       </div>
     );
   }

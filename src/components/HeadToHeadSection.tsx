@@ -149,21 +149,21 @@ export default function HeadToHeadSection({
           {emptyMessage ?? defaultEmptyMessage}
         </p>
       ) : (
-        <div className="space-y-3">
+        <>
           {list.map((game, index) => (
             <div key={game?.gameId || `h2h-${index}`}>
-              <GameRow game={game} />
+              <div className="mb-8">
+                <GameRow game={game} />
+              </div>
               {index === 0 && showTopPerformers && lastHeadToHeadBoxScore && (
-                <div>
-                  <TopPerformersBlock
-                    box={lastHeadToHeadBoxScore}
-                    firstGame={firstGame}
-                  />
-                </div>
+                <TopPerformersBlock
+                  box={lastHeadToHeadBoxScore}
+                  firstGame={firstGame}
+                />
               )}
             </div>
           ))}
-        </div>
+        </>
       )}
     </Section>
   );

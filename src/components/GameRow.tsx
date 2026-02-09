@@ -48,25 +48,21 @@ export default function GameRow({ game }: GameRowProps) {
   const awaySc = typeof game.awayScore === "number" ? game.awayScore : null;
   const homeSc = typeof game.homeScore === "number" ? game.homeScore : null;
   const hasAnyScore = awaySc !== null || homeSc !== null;
-  const scoreText = hasAnyScore
-    ? `${awaySc ?? "—"} - ${homeSc ?? "—"}`
-    : null;
+  const scoreText = hasAnyScore ? `${awaySc ?? "—"} - ${homeSc ?? "—"}` : null;
   const result = game.result;
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-sm text-gray-400">
-          {formatGameDate(game.gameDate)}
-        </span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="flex-1 flex items-center gap-1">
+      <span className="text-sm text-secondary uppercase">
+        {formatGameDate(game.gameDate)}
+      </span>
+      <div className="flex justify-between items-center font-mono">
+        <span className="flex-1 flex items-center gap-1.5 font-semibold">
           {awayLabel} @ {homeLabel}
           {(result === "W" || result === "L") && (
             <span
               className={resultBadge({ result })}
-              aria-label={result === "W" ? "win" : "loss"}
+              aria-label={result === "W" ? "(win)" : "(loss)"}
             />
           )}
         </span>

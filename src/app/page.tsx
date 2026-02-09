@@ -54,9 +54,9 @@ export default async function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-900">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="grid grid-cols-1 gap-8">
+    <main>
+      <div className="container mx-auto p-8 max-w-5xl">
+        <div className="grid grid-cols-1 gap-24">
           <GameCard game={nextGame.game} />
 
           <BroadcastInfo

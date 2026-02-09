@@ -53,9 +53,12 @@ function StandingsTeam({
 }) {
   return (
     <div>
-      <div className="flex justify-between items-center">
-        <Subheading>{label}</Subheading>
-        <span aria-label={`Record: ${team.wins} wins, ${team.losses} losses`}>
+      <div className="flex justify-between items-center relative">
+        <Subheading className="flex-1">{label}</Subheading>
+        <span
+          aria-label={`Record: ${team.wins} wins, ${team.losses} losses`}
+          className="font-mono absolute right-0 top-0"
+        >
           {team.wins}–{team.losses}
         </span>
       </div>
@@ -69,8 +72,8 @@ function StandingsTeam({
             >
               <span>
                 <span className="font-mono text-secondary">
-                  {ordinal(rank)}
-                </span>{" "}
+                  {ordinal(rank)}{" "}
+                </span>
                 {getLabel(team)}
               </span>
               {MEDALS[rank] && <span aria-hidden>{MEDALS[rank]}</span>}
