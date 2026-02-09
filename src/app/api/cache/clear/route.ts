@@ -1,16 +1,23 @@
 import { NextResponse } from 'next/server';
 import { deleteCached, CacheKeys, getRedis } from '@/lib/cache';
 
+const CACHE_CLEAR_SECRET = process.env.CACHE_CLEAR_SECRET;
+
 /**
  * Clear Next Ball cache keys so the next request refetches fresh data.
  *
- * Usage:
- *   - Browser or curl: GET http://localhost:3000/api/cache/clear
- *   - Optional: ?all=1 to clear all keys matching nba:* and cavs:* (slower)
+ * Requires ?secret=<CACHE_CLEAR_SECRET> (env var). Optional: ?all=1 to clear all keys.
+ *
+ * Example: GET /api/cache/clear?secret=your-secret&all=1
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
+  const secret = searchParams.get('secret');
   const clearAll = searchParams.get('all') === '1';
+
+  if (!CACHE_CLEAR_SECRET || secret !== CACHE_CLEAR_SECRET) {
+    return NextResponse.json({ ok: false, message: 'Unauthorized' }, { status: 401 });
+  }
 
   const client = getRedis();
   if (!client) {
