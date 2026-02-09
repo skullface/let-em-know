@@ -68,7 +68,10 @@ export default async function Home() {
         <div className="grid grid-cols-1 gap-8">
           <GameCard game={nextGame.game} />
 
-          <BroadcastInfo broadcasts={nextGame.game.broadcasts} />
+          <BroadcastInfo
+            broadcasts={nextGame.game.broadcasts}
+            isHomeGame={nextGame.game.isHome}
+          />
 
           <StandingsTable
             cavaliers={nextGame.standings.cavaliers}
