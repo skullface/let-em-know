@@ -2,6 +2,7 @@ import { cva } from "class-variance-authority";
 import { InjuryEntry } from "@/lib/nba/types";
 import Section from "@/components/Section";
 import Subheading from "@/components/Subheading";
+import PlayerRow from "@/components/PlayerRow";
 
 const injuryStatus = cva("", {
   variants: {
@@ -56,23 +57,20 @@ function InjurySection({
   return (
     <div>
       <Subheading>{team}</Subheading>
-      <div>
+      <ul>
         {reported.map((injury, idx) => (
-          <ul key={idx}>
-            <li className="flex justify-between items-start mb-1">
-              <span className="font-medium flex flex-row-reverse gap-2">
-                {injury.playerName}
-                <span className="w-[3ch] text-secondary font-mono">
-                  {injury.jerseyNumber ? <>#{injury.jerseyNumber}</> : <>#</>}
-                </span>
-              </span>
+          <PlayerRow
+            key={idx}
+            playerName={injury.playerName}
+            jerseyNumber={injury.jerseyNumber}
+            right={
               <span className={injuryStatus({ status: injury.status })}>
                 {injury.status}
               </span>
-            </li>
-          </ul>
+            }
+          />
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

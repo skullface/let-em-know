@@ -42,11 +42,10 @@ export default async function Home() {
       error instanceof Error ? error.message : "Unknown error occurred";
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="text-center max-w-lg">
-          <h1 className="text-2xl font-bold text-cavaliers-gold mb-4">
-            Error Loading Game Data
-          </h1>
-          <p className="text-gray-400 font-mono text-sm wrap-break-word">
+        <div>
+          <h1>Next Cavs game</h1>
+          <p>
+            Oops, there was an error loading data for the next Cavs game.
             {message}
           </p>
         </div>
@@ -82,6 +81,14 @@ export default async function Home() {
             opponentName={nextGame.game.opponent.teamName}
             opponentTeamId={nextGame.game.opponent.teamId}
           />
+
+          <HeadToHeadSection
+            headToHead={
+              Array.isArray(nextGame.headToHead) ? nextGame.headToHead : []
+            }
+            lastHeadToHeadBoxScore={nextGame.lastHeadToHeadBoxScore ?? null}
+            opponentName={nextGame.game?.opponent?.teamName ?? undefined}
+          />
         </div>
 
         {/* Lineups */}
@@ -95,16 +102,6 @@ export default async function Home() {
             teamName={nextGame.game.opponent.teamName}
             players={nextGame.projectedLineups.opponent}
             isHome={!nextGame.game.isHome}
-          />
-        </div>
-
-        <div className="mb-8">
-          <HeadToHeadSection
-            headToHead={
-              Array.isArray(nextGame.headToHead) ? nextGame.headToHead : []
-            }
-            lastHeadToHeadBoxScore={nextGame.lastHeadToHeadBoxScore ?? null}
-            opponentName={nextGame.game?.opponent?.teamName ?? undefined}
           />
         </div>
 

@@ -102,7 +102,7 @@ export interface BoxScorePlayerStat {
 /** Top 3 players in one stat category for one team */
 export interface TopThreeStat {
   statLabel: 'PTS' | 'REB' | 'AST';
-  players: Array<{ playerName: string; personId: number; value: number }>;
+  players: Array<{ playerName: string; personId: number; value: number; jerseyNumber?: string }>;
 }
 
 /** Top performers for the most recent H2H game (from box score) */

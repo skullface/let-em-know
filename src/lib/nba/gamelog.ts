@@ -364,10 +364,11 @@ export async function fetchTeamRoster(
   return players;
 }
 
-/** CDN box score: game.homeTeam.players[].{ personId, name, statistics: { points, reboundsTotal, assists } } */
+/** CDN box score: game.homeTeam.players[].{ personId, name, jerseyNum?, statistics: { points, reboundsTotal, assists } } */
 interface CDNBoxScorePlayer {
   personId: number;
   name: string;
+  jerseyNum?: string;
   statistics?: {
     points?: number;
     reboundsTotal?: number;
@@ -400,13 +401,14 @@ async function fetchBoxScoreFromCDN(gameId: string): Promise<CDNBoxScoreResponse
   }
 }
 
-/** Build rows { personId, playerName, teamId, points, rebounds, assists } from CDN box score. */
-function parseCDNBoxScoreToRows(cdn: CDNBoxScoreResponse): { rows: Array<{ personId: number; playerName: string; teamId: number; points: number; rebounds: number; assists: number }>; homeTeamId: number; awayTeamId: number } {
+/** Build rows { personId, playerName, teamId, points, rebounds, assists, jerseyNumber? } from CDN box score. */
+function parseCDNBoxScoreToRows(cdn: CDNBoxScoreResponse): { rows: Array<{ personId: number; playerName: string; teamId: number; points: number; rebounds: number; assists: number; jerseyNumber?: string }>; homeTeamId: number; awayTeamId: number } {
   const homeTeam = cdn?.game?.homeTeam;
   const awayTeam = cdn?.game?.awayTeam;
   const homeTeamId = homeTeam?.teamId ?? 0;
   const awayTeamId = awayTeam?.teamId ?? 0;
-  const rows: Array<{ personId: number; playerName: string; teamId: number; points: number; rebounds: number; assists: number }> = [];
+  const rows: Array<{ personId: number; playerName: string; teamId: number; points: number; rebounds: number; assists: number; jerseyNumber?: string }> = [];
+  const jersey = (p: CDNBoxScorePlayer) => String(p?.jerseyNum ?? '').trim() || undefined;
   for (const p of homeTeam?.players ?? []) {
     const stats = p?.statistics ?? {};
     const points = Number(stats.points ?? 0) || 0;
@@ -420,6 +422,7 @@ function parseCDNBoxScoreToRows(cdn: CDNBoxScoreResponse): { rows: Array<{ perso
       points,
       rebounds,
       assists,
+      ...(jersey(p) ? { jerseyNumber: jersey(p) } : {}),
     });
   }
   for (const p of awayTeam?.players ?? []) {
@@ -435,6 +438,7 @@ function parseCDNBoxScoreToRows(cdn: CDNBoxScoreResponse): { rows: Array<{ perso
       points,
       rebounds,
       assists,
+      ...(jersey(p) ? { jerseyNumber: jersey(p) } : {}),
     });
   }
   return { rows, homeTeamId, awayTeamId };
@@ -446,7 +450,7 @@ export async function getBoxScoreTopPerformers(
   homeTeamId: number,
   awayTeamId: number
 ): Promise<LastH2HBoxScore | null> {
-  const cacheKey = `nba:boxscore-tops:${gameId}`;
+  const cacheKey = `nba:boxscore-tops:v2:${gameId}`;
   const cached = await getCached<LastH2HBoxScore>(cacheKey);
   if (cached) return cached;
 
@@ -456,7 +460,7 @@ export async function getBoxScoreTopPerformers(
     const { rows, homeTeamId: hId, awayTeamId: aId } = parseCDNBoxScoreToRows(cdn);
     if (rows.length > 0 && Number(hId) === Number(homeTeamId) && Number(aId) === Number(awayTeamId)) {
       const topN = (arr: typeof rows, key: 'points' | 'rebounds' | 'assists', n: number) =>
-        [...arr].sort((a, b) => b[key] - a[key]).slice(0, n).map((p) => ({ playerName: p.playerName, personId: p.personId, value: p[key] }));
+        [...arr].sort((a, b) => b[key] - a[key]).slice(0, n).map((p) => ({ playerName: p.playerName, personId: p.personId, value: p[key], ...(p.jerseyNumber ? { jerseyNumber: p.jerseyNumber } : {}) }));
       const homeRows = rows.filter((r) => r.teamId === homeTeamId);
       const awayRows = rows.filter((r) => r.teamId === awayTeamId);
       const gameHighPts = rows.length ? [...rows].sort((a, b) => b.points - a.points)[0] : null;
@@ -535,7 +539,8 @@ export async function getBoxScoreTopPerformers(
     const points = Number(getVal(row, 'PTS', 'POINTS') ?? 0) || 0;
     const rebounds = Number(getVal(row, 'REB', 'TOT_REB', 'REBOUNDS', 'REBOUNDS_TOTAL') ?? 0) || 0;
     const assists = Number(getVal(row, 'AST', 'ASSISTS') ?? 0) || 0;
-    return { personId, playerName, teamId, points, rebounds, assists };
+    const jerseyNumber = String(getVal(row, 'JERSEY_NUM', 'NUM', 'JERSEY') ?? '').trim() || undefined;
+    return { personId, playerName, teamId, points, rebounds, assists, ...(jerseyNumber ? { jerseyNumber } : {}) };
   };
 
   const allRows: Array<Array<string | number>> =
@@ -554,7 +559,7 @@ export async function getBoxScoreTopPerformers(
     [...arr]
       .sort((a, b) => b[key] - a[key])
       .slice(0, n)
-      .map((p) => ({ playerName: p.playerName, personId: p.personId, value: p[key] }));
+      .map((p) => ({ playerName: p.playerName, personId: p.personId, value: p[key], ...(p.jerseyNumber ? { jerseyNumber: p.jerseyNumber } : {}) }));
 
   const homeTopPts = topN(homeRows, 'points', 3);
   const homeTopReb = topN(homeRows, 'rebounds', 3);
