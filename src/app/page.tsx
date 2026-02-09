@@ -57,14 +57,6 @@ export default async function Home() {
   return (
     <main className="min-h-screen bg-gray-900">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold text-cavaliers-gold mb-2">
-            Cleveland Cavaliers
-          </h1>
-          <p className="text-gray-400">Next Upcoming Game</p>
-        </header>
-
         <div className="grid grid-cols-1 gap-8">
           <GameCard game={nextGame.game} />
 
@@ -81,13 +73,13 @@ export default async function Home() {
           <InjuryReport
             cavaliers={nextGame.injuries.cavaliers}
             opponent={nextGame.injuries.opponent}
-            opponentName={nextGame.game.opponent.teamCity}
+            opponentName={nextGame.game.opponent.teamName}
           />
 
           <RecentGames
             cavaliersRecentGames={nextGame.cavaliersRecentGames}
             opponentRecentGames={nextGame.opponentRecentGames}
-            opponentName={nextGame.game.opponent.teamCity}
+            opponentName={nextGame.game.opponent.teamName}
             opponentTeamId={nextGame.game.opponent.teamId}
           />
         </div>
@@ -100,7 +92,7 @@ export default async function Home() {
             isHome={nextGame.game.isHome}
           />
           <LineupCard
-            teamName={nextGame.game.opponent.teamCity}
+            teamName={nextGame.game.opponent.teamName}
             players={nextGame.projectedLineups.opponent}
             isHome={!nextGame.game.isHome}
           />
@@ -112,7 +104,7 @@ export default async function Home() {
               Array.isArray(nextGame.headToHead) ? nextGame.headToHead : []
             }
             lastHeadToHeadBoxScore={nextGame.lastHeadToHeadBoxScore ?? null}
-            opponentName={nextGame.game?.opponent?.teamCity ?? undefined}
+            opponentName={nextGame.game?.opponent?.teamName ?? undefined}
           />
         </div>
 

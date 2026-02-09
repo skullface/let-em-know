@@ -212,12 +212,12 @@ export default function RecentGames({
     <Section title="Last three games">
       <div className="grid grid-cols-2 gap-12">
         <RecentGamesData
-          title="Cavaliers Last 3 Games"
+          title="Cavaliers"
           games={cavaliersRecentGames}
           focusTeamId={CAVALIERS_TEAM_ID}
         />
         <RecentGamesData
-          title={`${opponentName} Last 3 Games`}
+          title={opponentName}
           games={opponentRecentGames}
           focusTeamId={opponentTeamId}
         />
