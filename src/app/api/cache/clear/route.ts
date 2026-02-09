@@ -36,16 +36,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ ok: true, cleared: allKeys.length, keys: allKeys });
     }
 
-    // Clear only the main keys used for the next-game response
+    // Clear main keys and injury caches so next load gets fresh injuries too
     await Promise.all([
       deleteCached(CacheKeys.schedule),
       deleteCached(CacheKeys.standings),
       deleteCached(CacheKeys.nextGame),
     ]);
+    const injuryKeys = await client.keys('nba:injuries*');
+    if (injuryKeys.length > 0) {
+      await client.del(...injuryKeys);
+    }
 
     return NextResponse.json({
       ok: true,
-      cleared: ['schedule', 'standings', 'next-game'],
+      cleared: ['schedule', 'standings', 'next-game', ...(injuryKeys.length > 0 ? [`injuries (${injuryKeys.length} keys)`] : [])],
     });
   } catch (error) {
     console.error('Cache clear error:', error);
