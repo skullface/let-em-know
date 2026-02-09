@@ -11,8 +11,8 @@
   :root {
     --text-sm: 10px;
     --text-base: 13px;
-    --text-lg: 40px;
-    --text-xl: 48px;
+    --text-lg: 32px;
+    --text-xl: 60px;
     --text-xl--line-height: 1;
   }
 }
@@ -23,6 +23,12 @@
     --color-foreground: #fff;
     --color-secondary: #aaa;
     --color-subtle: #222;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --text-xl: 40px;
   }
 }
 
