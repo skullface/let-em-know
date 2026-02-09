@@ -7,11 +7,11 @@ import PlayerRow from "@/components/PlayerRow";
 const injuryStatus = cva("", {
   variants: {
     status: {
-      Out: "text-red-400",
-      Questionable: "text-yellow-400",
-      Doubtful: "text-orange-400",
-      Probable: "text-green-400",
-      Available: "text-green-300",
+      Out: "text-red-500",
+      Questionable: "text-yellow-500",
+      Doubtful: "text-orange-500",
+      Probable: "text-green-500",
+      Available: "text-green-500",
     },
   },
 });
