@@ -3,7 +3,6 @@ import GameCard from "@/components/GameCard";
 import StandingsTable from "@/components/StandingsTable";
 import InjuryReport from "@/components/InjuryReport";
 import LineupCard from "@/components/LineupCard";
-import BroadcastInfo from "@/components/BroadcastInfo";
 import RecentGames from "@/components/RecentGames";
 import HeadToHeadSection from "@/components/HeadToHeadSection";
 
@@ -55,61 +54,54 @@ export default async function Home() {
 
   return (
     <main>
-      <div className="container mx-auto p-8 max-w-5xl">
-        <div className="grid grid-cols-1 gap-24">
-          <GameCard game={nextGame.game} />
+      <div className="grid grid-cols-1 gap-24">
+        <GameCard game={nextGame.game} />
 
-          <BroadcastInfo
-            broadcasts={nextGame.game.broadcasts}
-            isHomeGame={nextGame.game.isHome}
-          />
+        <StandingsTable
+          cavaliers={nextGame.standings.cavaliers}
+          opponent={nextGame.standings.opponent}
+        />
 
-          <StandingsTable
-            cavaliers={nextGame.standings.cavaliers}
-            opponent={nextGame.standings.opponent}
-          />
+        <InjuryReport
+          cavaliers={nextGame.injuries.cavaliers}
+          opponent={nextGame.injuries.opponent}
+          opponentName={nextGame.game.opponent.teamName}
+        />
 
-          <InjuryReport
-            cavaliers={nextGame.injuries.cavaliers}
-            opponent={nextGame.injuries.opponent}
-            opponentName={nextGame.game.opponent.teamName}
-          />
+        <RecentGames
+          cavaliersRecentGames={nextGame.cavaliersRecentGames}
+          opponentRecentGames={nextGame.opponentRecentGames}
+          opponentName={nextGame.game.opponent.teamName}
+          opponentTeamId={nextGame.game.opponent.teamId}
+        />
 
-          <RecentGames
-            cavaliersRecentGames={nextGame.cavaliersRecentGames}
-            opponentRecentGames={nextGame.opponentRecentGames}
-            opponentName={nextGame.game.opponent.teamName}
-            opponentTeamId={nextGame.game.opponent.teamId}
-          />
-
-          <HeadToHeadSection
-            headToHead={
-              Array.isArray(nextGame.headToHead) ? nextGame.headToHead : []
-            }
-            lastHeadToHeadBoxScore={nextGame.lastHeadToHeadBoxScore ?? null}
-            opponentName={nextGame.game?.opponent?.teamName ?? undefined}
-          />
-        </div>
-
-        {/* Lineups */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <LineupCard
-            teamName="Cavaliers"
-            players={nextGame.projectedLineups.cavaliers}
-            isHome={nextGame.game.isHome}
-          />
-          <LineupCard
-            teamName={nextGame.game.opponent.teamName}
-            players={nextGame.projectedLineups.opponent}
-            isHome={!nextGame.game.isHome}
-          />
-        </div>
-
-        {/* Footer */}
-        <footer className="text-center text-gray-500 text-sm mt-12">
-          <p>Last updated: {new Date(nextGame.lastUpdated).toLocaleString()}</p>
-        </footer>
+        <HeadToHeadSection
+          headToHead={
+            Array.isArray(nextGame.headToHead) ? nextGame.headToHead : []
+          }
+          lastHeadToHeadBoxScore={nextGame.lastHeadToHeadBoxScore ?? null}
+          opponentName={nextGame.game?.opponent?.teamName ?? undefined}
+        />
       </div>
+
+      {/* Lineups */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <LineupCard
+          teamName="Cavaliers"
+          players={nextGame.projectedLineups.cavaliers}
+          isHome={nextGame.game.isHome}
+        />
+        <LineupCard
+          teamName={nextGame.game.opponent.teamName}
+          players={nextGame.projectedLineups.opponent}
+          isHome={!nextGame.game.isHome}
+        />
+      </div>
+
+      {/* Footer */}
+      <footer className="text-center text-gray-500 text-sm mt-12">
+        <p>Last updated: {new Date(nextGame.lastUpdated).toLocaleString()}</p>
+      </footer>
     </main>
   );
 }

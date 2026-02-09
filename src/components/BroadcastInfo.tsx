@@ -22,7 +22,7 @@ export default function BroadcastInfo({
   }
 
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-1 text-secondary p-3 border border-subtle">
       <h2 className="sr-only">Broadcast information</h2>
       📺 Streaming on
       <ul>
