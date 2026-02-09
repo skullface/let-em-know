@@ -2,6 +2,7 @@ import { cva } from "class-variance-authority";
 import { GameSummary, TeamInfo } from "@/lib/nba/types";
 import { format } from "date-fns";
 import Section from "@/components/Section";
+import Subheading from "@/components/Subheading";
 
 const resultBadge = cva("rounded-full w-2 h-2", {
   variants: {
@@ -151,7 +152,7 @@ export function RecentGamesData({
   const summary = getSummarySentence(list, focusTeamId);
   return (
     <div>
-      <h3>{title}</h3>
+      <Subheading>{title}</Subheading>
       <div className="flex flex-col-reverse gap-2">
         {summary && (
           <p className="text-secondary font-mono text-sm italic">{summary}.</p>

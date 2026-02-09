@@ -1,6 +1,7 @@
 import { cva } from "class-variance-authority";
 import { InjuryEntry } from "@/lib/nba/types";
 import Section from "@/components/Section";
+import Subheading from "@/components/Subheading";
 
 const injuryStatus = cva("", {
   variants: {
@@ -46,7 +47,7 @@ function InjurySection({
   if (reported.length === 0) {
     return (
       <div>
-        <h3>{team}</h3>
+        <Subheading>{team}</Subheading>
         <p>No injuries reported</p>
       </div>
     );
@@ -54,7 +55,7 @@ function InjurySection({
 
   return (
     <div>
-      <h3>{team}</h3>
+      <Subheading>{team}</Subheading>
       <div>
         {reported.map((injury, idx) => (
           <ul key={idx}>

@@ -1,5 +1,6 @@
 import { StandingsEntry } from "@/lib/nba/types";
 import Section from "@/components/Section";
+import Subheading from "@/components/Subheading";
 
 function ordinal(n: number): string {
   const s = ["th", "st", "nd", "rd"];
@@ -53,7 +54,7 @@ function StandingsTeam({
   return (
     <div>
       <div className="flex justify-between items-center">
-        <h3>{label}</h3>
+        <Subheading>{label}</Subheading>
         <span aria-label={`Record: ${team.wins} wins, ${team.losses} losses`}>
           {team.wins}–{team.losses}
         </span>
