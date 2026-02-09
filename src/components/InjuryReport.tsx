@@ -1,4 +1,4 @@
-import { InjuryEntry } from '@/lib/nba/types';
+import { InjuryEntry } from "@/lib/nba/types";
 
 interface InjuryReportProps {
   cavaliers: InjuryEntry[];
@@ -12,11 +12,9 @@ export default function InjuryReport({
   opponentName,
 }: InjuryReportProps) {
   return (
-    <div className="bg-gray-800 rounded-lg p-4">
-      <h2 className="text-xl font-bold mb-4 text-cavaliers-gold">
-        Injury Report
-      </h2>
-      <div className="space-y-4">
+    <div>
+      <h2>Injury report</h2>
+      <div className="grid grid-cols-2 gap-12">
         <InjurySection team="Cavaliers" injuries={cavaliers} />
         <InjurySection team={opponentName} injuries={opponent} />
       </div>
@@ -31,44 +29,42 @@ function InjurySection({
   team: string;
   injuries: InjuryEntry[];
 }) {
-  if (injuries.length === 0) {
+  const reported = injuries.filter((e) => e.status !== "Available");
+  if (reported.length === 0) {
     return (
       <div>
-        <h3 className="font-semibold mb-2 text-gray-300">{team}</h3>
-        <p className="text-sm text-gray-400">No injuries reported</p>
+        <h3>{team}</h3>
+        <p>No injuries reported</p>
       </div>
     );
   }
 
-  const statusColors: Record<InjuryEntry['status'], string> = {
-    Out: 'text-red-400',
-    Questionable: 'text-yellow-400',
-    Doubtful: 'text-orange-400',
-    Probable: 'text-green-400',
-    Available: 'text-green-300',
+  const statusColors: Record<InjuryEntry["status"], string> = {
+    Out: "text-red-400",
+    Questionable: "text-yellow-400",
+    Doubtful: "text-orange-400",
+    Probable: "text-green-400",
+    Available: "text-green-300",
   };
 
   return (
     <div>
-      <h3 className="font-semibold mb-2 text-gray-300">{team}</h3>
-      <div className="space-y-2">
-        {injuries.map((injury, idx) => (
-          <div key={idx} className="bg-gray-700/50 p-2 rounded text-sm">
-            <div className="flex justify-between items-start mb-1">
-              <span className="font-medium">
+      <h3>{team}</h3>
+      <div>
+        {reported.map((injury, idx) => (
+          <ul key={idx}>
+            <li className="flex justify-between items-start mb-1">
+              <span className="font-medium flex flex-row-reverse gap-2">
                 {injury.playerName}
-                {injury.jerseyNumber && (
-                  <span className="text-gray-400 ml-2">#{injury.jerseyNumber}</span>
-                )}
+                <span className="w-[3ch] text-secondary font-mono">
+                  {injury.jerseyNumber ? <>#{injury.jerseyNumber}</> : <>#</>}
+                </span>
               </span>
-              <span className={`font-semibold ${statusColors[injury.status]}`}>
+              <span className={`${statusColors[injury.status]}`}>
                 {injury.status}
               </span>
-            </div>
-            <div className="text-gray-400 text-xs">
-              {injury.reason?.trim() || '—'}
-            </div>
-          </div>
+            </li>
+          </ul>
         ))}
       </div>
     </div>
