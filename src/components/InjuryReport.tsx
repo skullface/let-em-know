@@ -44,11 +44,22 @@ function InjurySection({
   team: string;
   injuries: InjuryEntry[];
 }) {
-  const reported = injuries.filter(
-    (e) =>
-      e.status !== "Available" &&
-      !e.reason.includes("G League - Two-Way")
-  );
+  const statusOrder: InjuryEntry["status"][] = [
+    "Out",
+    "Doubtful",
+    "Questionable",
+    "Probable",
+  ];
+  const reported = injuries
+    .filter(
+      (e) =>
+        e.status !== "Available" &&
+        !e.reason.includes("G League - Two-Way")
+    )
+    .sort(
+      (a, b) =>
+        statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status)
+    );
   if (reported.length === 0) {
     return (
       <div>
