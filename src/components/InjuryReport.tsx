@@ -44,7 +44,11 @@ function InjurySection({
   team: string;
   injuries: InjuryEntry[];
 }) {
-  const reported = injuries.filter((e) => e.status !== "Available");
+  const reported = injuries.filter(
+    (e) =>
+      e.status !== "Available" &&
+      !e.reason.includes("G League - Two-Way")
+  );
   if (reported.length === 0) {
     return (
       <div>
