@@ -13,7 +13,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-surface text-foreground antialiased">{children}</body>
+      <body className="bg-surface text-foreground antialiased">
+        <div className="container mx-auto p-8 max-w-3xl">{children}</div>
+      </body>
     </html>
   );
 }

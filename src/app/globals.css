@@ -5,8 +5,16 @@
   --color-foreground: #000;
   --color-secondary: #444;
   --color-subtle: #eee;
-  --font-size-sm: 10px;
-  --font-size-base: 13px;
+}
+
+@layer theme {
+  :root {
+    --text-sm: 10px;
+    --text-base: 13px;
+    --text-lg: 40px;
+    --text-xl: 48px;
+    --text-xl--line-height: 1;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,6 +28,6 @@
 
 @layer base {
   html {
-    font-size: var(--font-size-base);
+    font-size: var(--text-base);
   }
 }

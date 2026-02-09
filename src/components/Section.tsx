@@ -8,7 +8,7 @@ interface SectionProps {
 export default function Section({ title, children }: SectionProps) {
   return (
     <section>
-      <h2 className="text-[40px] leading-none mb-8">{title}.</h2>
+      <h2 className="text-lg leading-none mb-8">{title}.</h2>
       {children}
     </section>
   );
