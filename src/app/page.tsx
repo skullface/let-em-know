@@ -81,18 +81,12 @@ export default async function Home() {
             opponentName={nextGame.game.opponent.teamCity}
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <RecentGames
-              title="Cavaliers Last 3 Games"
-              games={nextGame.cavaliersRecentGames}
-              focusTeamId={1610612739}
-            />
-            <RecentGames
-              title={`${nextGame.game.opponent.teamCity} Last 3 Games`}
-              games={nextGame.opponentRecentGames}
-              focusTeamId={nextGame.game.opponent.teamId}
-            />
-          </div>
+          <RecentGames
+            cavaliersRecentGames={nextGame.cavaliersRecentGames}
+            opponentRecentGames={nextGame.opponentRecentGames}
+            opponentName={nextGame.game.opponent.teamCity}
+            opponentTeamId={nextGame.game.opponent.teamId}
+          />
         </div>
 
         {/* Lineups */}
