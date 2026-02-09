@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { fetchSchedule, findNextCavaliersGame, getOpponent, isHomeGame, getAllBroadcasts, getStandingsFromSchedule, getHeadToHeadFromSchedule, getOpponentRecentGamesFromSchedule } from '@/lib/nba/schedule';
 import { fetchStandings, findTeamStandings } from '@/lib/nba/standings';
 import { fetchInjuryReport } from '@/lib/nba/injuries';
+import { normalizeNameForMatch } from '@/lib/nba/names';
 import { fetchTeamGameLog, fetchHeadToHeadGames, getBoxScoreTopPerformers, fetchTeamRoster } from '@/lib/nba/gamelog';
 import { fetchProjectedLineup } from '@/lib/nba/lineups';
 import { getCached, CacheKeys } from '@/lib/cache';
@@ -109,27 +110,44 @@ export async function GET() {
       fetchTeamRoster(opponent.teamId),
     ]);
     const enrichInjuriesWithJersey = (injuries: InjuryEntry[], roster: Player[]): InjuryEntry[] => {
-      const byName = new Map<string, Player>();
+      const byNormalizedName = new Map<string, Player>();
       for (const p of roster) {
         if (!p.firstName && !p.lastName) continue;
-        const full = `${(p.firstName ?? '').trim()} ${(p.lastName ?? '').trim()}`.trim().toLowerCase();
-        byName.set(full, p);
-        const lastFirst = `${(p.lastName ?? '').trim()}, ${(p.firstName ?? '').trim()}`.trim().toLowerCase();
-        if (lastFirst !== full) byName.set(lastFirst, p);
+        const full = `${(p.firstName ?? '').trim()} ${(p.lastName ?? '').trim()}`.trim();
+        const key = normalizeNameForMatch(full);
+        byNormalizedName.set(key, p);
+        const lastFirst = `${(p.lastName ?? '').trim()}, ${(p.firstName ?? '').trim()}`.trim();
+        const keyLastFirst = normalizeNameForMatch(lastFirst);
+        if (keyLastFirst !== key) byNormalizedName.set(keyLastFirst, p);
       }
       return injuries.map((inj) => {
-        const key = inj.playerName.trim().toLowerCase();
-        let player = byName.get(key);
-        if (!player && key.includes(',')) {
-          const [last, first] = key.split(',').map((s) => s.trim());
-          player = byName.get(`${first} ${last}`);
+        const raw = inj.playerName.trim();
+        const key = normalizeNameForMatch(raw);
+        let player = byNormalizedName.get(key);
+        if (!player && raw.includes(',')) {
+          const [last, first] = raw.split(',').map((s) => s.trim());
+          player = byNormalizedName.get(normalizeNameForMatch(`${first} ${last}`));
         }
         if (!player) {
-          const lastWord = key.split(/\s+/).pop();
-          if (lastWord) player = roster.find((p) => (p.lastName ?? '').toLowerCase() === lastWord);
+          const lastWord = raw.split(/\s+/).pop();
+          if (lastWord) {
+            const normalizedLast = normalizeNameForMatch(lastWord);
+            player = roster.find(
+              (p) => normalizeNameForMatch(p.lastName ?? '') === normalizedLast
+            );
+          }
         }
-        const jerseyNumber = player?.jerseyNumber;
-        return jerseyNumber ? { ...inj, jerseyNumber } : inj;
+        if (!player) return inj;
+        const displayName =
+          `${(player.firstName ?? '').trim()} ${(player.lastName ?? '').trim()}`.trim() ||
+          inj.playerName;
+        return {
+          ...inj,
+          playerName: displayName,
+          ...(player.jerseyNumber != null && player.jerseyNumber !== ''
+            ? { jerseyNumber: player.jerseyNumber }
+            : {}),
+        };
       });
     };
     const cavaliersInjuriesEnriched = enrichInjuriesWithJersey(cavaliersInjuries, cavsRoster);
