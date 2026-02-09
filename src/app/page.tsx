@@ -53,10 +53,10 @@ export default async function Home() {
   }
 
   return (
-    <main>
-      <div className="grid grid-cols-1 gap-24">
-        <GameCard game={nextGame.game} />
+    <div className="grid grid-cols-1 gap-24">
+      <GameCard game={nextGame.game} />
 
+      <main className="grid grid-cols-1 gap-24">
         <StandingsTable
           cavaliers={nextGame.standings.cavaliers}
           opponent={nextGame.standings.opponent}
@@ -82,26 +82,25 @@ export default async function Home() {
           lastHeadToHeadBoxScore={nextGame.lastHeadToHeadBoxScore ?? null}
           opponentName={nextGame.game?.opponent?.teamName ?? undefined}
         />
-      </div>
 
-      {/* Lineups */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <LineupCard
-          teamName="Cavaliers"
-          players={nextGame.projectedLineups.cavaliers}
-          isHome={nextGame.game.isHome}
-        />
-        <LineupCard
-          teamName={nextGame.game.opponent.teamName}
-          players={nextGame.projectedLineups.opponent}
-          isHome={!nextGame.game.isHome}
-        />
-      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <LineupCard
+            teamName="Cavaliers"
+            players={nextGame.projectedLineups.cavaliers}
+            isHome={nextGame.game.isHome}
+          />
+          <LineupCard
+            teamName={nextGame.game.opponent.teamName}
+            players={nextGame.projectedLineups.opponent}
+            isHome={!nextGame.game.isHome}
+          />
+        </div>
+      </main>
 
       {/* Footer */}
-      <footer className="text-center text-gray-500 text-sm mt-12">
+      <footer className="text-center text-secondary text-sm mt-24">
         <p>Last updated: {new Date(nextGame.lastUpdated).toLocaleString()}</p>
       </footer>
-    </main>
+    </div>
   );
 }
