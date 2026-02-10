@@ -21,7 +21,7 @@ export default function Starters({ teamName, players, isHome }: StartersProps) {
               key={player.personId || idx}
               playerName={`${player.firstName} ${player.lastName}`}
               jerseyNumber={player.jerseyNumber}
-              right={player.position}
+              right={null}
             />
           ))}
         </ul>
