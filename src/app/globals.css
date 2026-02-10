@@ -5,6 +5,15 @@
   --color-foreground: #000;
   --color-secondary: #444;
   --color-subtle: #eee;
+  
+  --color-green-500: #3AA906;
+  --color-red-500: #D20707;
+  --color-yellow-500: #D39A09;
+  
+  --color-bronze: #C39B73;
+  --color-silver: #bbb;
+  --color-gold: #FDBB30;
+  --color-wine: #860038;
 }
 
 @layer theme {
@@ -23,6 +32,8 @@
     --color-foreground: #fff;
     --color-secondary: #aaa;
     --color-subtle: #222;
+    --color-bronze: #8E5924;
+    --color-silver: #555;
   }
 }
 
@@ -35,5 +46,10 @@
 @layer base {
   html {
     font-size: var(--text-base);
+  }
+  
+  ::selection {
+    color: var(--color-wine);
+    background-color: var(--color-gold);
   }
 }

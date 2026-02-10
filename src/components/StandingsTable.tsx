@@ -13,9 +13,9 @@ function ordinal(n: number): string {
 const star = cva("inline-flex shrink-0", {
   variants: {
     rank: {
-      1: "text-amber-400",
-      2: "text-neutral-500",
-      3: "text-amber-800",
+      1: "text-gold",
+      2: "text-silver",
+      3: "text-bronze",
     },
   },
 });
