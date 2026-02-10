@@ -18,11 +18,15 @@ export default function GameCard({ game }: GameCardProps) {
   const gameDateStrET = gameDate.toLocaleDateString("en-US", { timeZone: ET });
   const nowStrET = now.toLocaleDateString("en-US", { timeZone: ET });
   const isGameDay = gameDateStrET === nowStrET;
+  const isLive = gameDate.getTime() <= now.getTime();
 
   const distanceStr = formatDistance(gameDate, now, { addSuffix: true });
   let distancePrefix = "";
   let distanceBold = distanceStr;
-  if (distanceStr.startsWith("in about ")) {
+  if (isLive) {
+    distancePrefix = "";
+    distanceBold = "right now";
+  } else if (distanceStr.startsWith("in about ")) {
     distancePrefix = "in about ";
     distanceBold = distanceStr.slice(9);
   } else if (distanceStr.startsWith("in ")) {
