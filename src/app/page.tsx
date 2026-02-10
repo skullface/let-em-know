@@ -68,6 +68,13 @@ export default async function Home() {
           opponentName={nextGame.game.opponent.teamName}
         />
 
+        <StartingLineupSection
+          cavaliersPlayers={nextGame.projectedLineups.cavaliers}
+          opponentPlayers={nextGame.projectedLineups.opponent}
+          opponentName={nextGame.game.opponent.teamName}
+          isHome={nextGame.game.isHome}
+        />
+
         <RecentGames
           cavaliersRecentGames={nextGame.cavaliersRecentGames}
           opponentRecentGames={nextGame.opponentRecentGames}
@@ -81,13 +88,6 @@ export default async function Home() {
           }
           lastHeadToHeadBoxScore={nextGame.lastHeadToHeadBoxScore ?? null}
           opponentName={nextGame.game?.opponent?.teamName ?? undefined}
-        />
-
-        <StartingLineupSection
-          cavaliersPlayers={nextGame.projectedLineups.cavaliers}
-          opponentPlayers={nextGame.projectedLineups.opponent}
-          opponentName={nextGame.game.opponent.teamName}
-          isHome={nextGame.game.isHome}
         />
       </main>
 

@@ -16,7 +16,7 @@ export default function StartingLineupSection({
   isHome,
 }: StartingLineupSectionProps) {
   return (
-    <Section title="Expected starting lineups">
+    <Section title="Expected starting lineup">
       <div className="grid grid-cols-2 gap-12">
         <Starters
           teamName="Cavaliers"
