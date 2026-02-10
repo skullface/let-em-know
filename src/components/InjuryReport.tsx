@@ -75,7 +75,7 @@ function InjurySection({
   return (
     <div>
       <Subheading>{team}</Subheading>
-      <ul className="grid grid-cols-1 gap-2">
+      <ul className="grid grid-cols-1 gap-1.5">
         {reported.map((injury, idx) => (
           <PlayerRow
             key={idx}

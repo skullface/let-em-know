@@ -51,7 +51,7 @@ function TopPerformersBlock({
     gameHighPersonId: number | null,
     valueSuffix: string
   ) => (
-    <ul className="grid grid-cols-1 gap-2">
+    <ul className="grid grid-cols-1 gap-1.5">
       {players.map((p) => (
         <PlayerRow
           key={p.personId}

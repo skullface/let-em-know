@@ -123,7 +123,7 @@ export function RecentGamesData({
   return (
     <div>
       <Subheading>{title}</Subheading>
-      <div className="flex flex-col-reverse gap-2">
+      <div className="flex flex-col-reverse gap-1.5">
         {summary && (
           <p className="text-secondary text-sm mt-5 pt-3 border-t border-subtle">
             {summary}.

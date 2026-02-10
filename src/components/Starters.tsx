@@ -14,7 +14,7 @@ export default function Starters({ teamName, players }: StartersProps) {
       {players.length === 0 ? (
         <p className="text-gray-400 text-sm">Lineup not available yet</p>
       ) : (
-        <ul className="grid grid-cols-1 gap-2">
+        <ul className="grid grid-cols-1 gap-1.5">
           {players.map((player, idx) => (
             <PlayerRow
               key={player.personId || idx}
