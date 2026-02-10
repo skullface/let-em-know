@@ -1,3 +1,4 @@
+import { cva } from "class-variance-authority";
 import { StandingsEntry } from "@/lib/nba/types";
 import Section from "@/components/Section";
 import Subheading from "@/components/Subheading";
@@ -8,7 +9,33 @@ function ordinal(n: number): string {
   return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
 }
 
-const MEDALS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
+const star = cva("inline-flex shrink-0", {
+  variants: {
+    rank: {
+      1: "text-amber-400",
+      2: "text-neutral-500",
+      3: "text-amber-800",
+    },
+  },
+});
+
+function Star({ rank }: { rank: 1 | 2 | 3 }) {
+  return (
+    <span className={star({ rank })} aria-hidden>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 14 13"
+        width="14"
+        height="13"
+        fill="currentColor"
+        className="size-4"
+        aria-hidden
+      >
+        <path d="M7 0L9.16 4.28L14 4.96L10.5 8.30L11.33 13L7 10.78L2.67 13L3.5 8.3L0 4.96L4.84 4.28L7 0Z" />
+      </svg>
+    </span>
+  );
+}
 
 interface StandingsTableProps {
   cavaliers: StandingsEntry;
@@ -76,7 +103,9 @@ function StandingsTeam({
                 </span>
                 {getLabel(team)}
               </span>
-              {MEDALS[rank] && <span aria-hidden>{MEDALS[rank]}</span>}
+              {(rank === 1 || rank === 2 || rank === 3) && (
+                <Star rank={rank as 1 | 2 | 3} />
+              )}
             </li>
           );
         })}
