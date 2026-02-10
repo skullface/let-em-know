@@ -3,7 +3,6 @@ import GameCard from "@/components/GameCard";
 import StandingsTable from "@/components/StandingsTable";
 import InjuryReport from "@/components/InjuryReport";
 import RecentGames from "@/components/RecentGames";
-import StartingLineupSection from "@/components/StartingLineupSection";
 import HeadToHeadSection from "@/components/HeadToHeadSection";
 import { getNextGameData } from "@/lib/next-game";
 
@@ -45,12 +44,6 @@ export default async function Home() {
         <InjuryReport
           cavaliers={nextGame.injuries.cavaliers}
           opponent={nextGame.injuries.opponent}
-          opponentName={nextGame.game.opponent.teamName}
-        />
-
-        <StartingLineupSection
-          cavaliersPlayers={nextGame.projectedLineups.cavaliers}
-          opponentPlayers={nextGame.projectedLineups.opponent}
           opponentName={nextGame.game.opponent.teamName}
         />
 
