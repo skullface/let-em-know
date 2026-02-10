@@ -7,6 +7,8 @@ import StartingLineupSection from "@/components/StartingLineupSection";
 import HeadToHeadSection from "@/components/HeadToHeadSection";
 import { getNextGameData } from "@/lib/next-game";
 
+export const revalidate = 300;
+
 export default async function Home() {
   let nextGame: NextGameResponse;
 

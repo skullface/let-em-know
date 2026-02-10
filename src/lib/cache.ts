@@ -4,7 +4,17 @@ import { Redis } from '@upstash/redis';
 // In production, these should come from environment variables
 let redis: Redis | null = null;
 
+/**
+ * During `next build` we skip Redis so the page can be statically generated
+ * (Upstash uses fetch internally, which Next treats as dynamic and would block static).
+ * At runtime (revalidation or API routes) Redis is used as normal.
+ */
+function isStaticBuild(): boolean {
+  return process.env.NEXT_PHASE === 'phase-production-build';
+}
+
 export function getRedis(): Redis | null {
+  if (isStaticBuild()) return null;
   if (!redis) {
     const url = process.env.UPSTASH_REDIS_REST_URL;
     const token = process.env.UPSTASH_REDIS_REST_TOKEN;
