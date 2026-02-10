@@ -59,11 +59,9 @@ function TopPerformersBlock({
           jerseyNumber={p.jerseyNumber}
           highlight={p.personId === gameHighPersonId}
           right={
-            p.position ?? (
-              <span className="font-mono uppercase">
-                {p.value} {valueSuffix}
-              </span>
-            )
+            <span className="font-mono uppercase">
+              {p.value} {valueSuffix}
+            </span>
           }
         />
       ))}
