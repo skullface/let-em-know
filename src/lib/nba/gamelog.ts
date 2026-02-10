@@ -18,7 +18,8 @@ interface BoxScoreResponse {
 
 export async function fetchTeamGameLog(
   teamId: number,
-  season: string = '2025-26'
+  season: string = '2025-26',
+  maxGames: number = 20
 ): Promise<GameSummary[]> {
   const cacheKey = CacheKeys.opponentGames(teamId);
   const cached = await getCached<GameSummary[]>(cacheKey);
@@ -83,36 +84,44 @@ export async function fetchTeamGameLog(
   const headers: string[] = Array.isArray(rawSet?.headers) ? rawSet.headers : [];
   const getValH = (row: Array<string | number>, name: string) => getVal(row, headers, name);
 
-  const games: GameSummary[] = rowSet
-    .slice(0, 3)
-    .map((row: Array<string | number>) => {
-      const gameId = String(getValH(row, 'GAME_ID') ?? '');
-      const gameDate = String(getValH(row, 'GAME_DATE') ?? '');
-      const matchup = String(getValH(row, 'MATCHUP') ?? '');
-      const pts = Number(getValH(row, 'PTS')) || 0;
-      const [awayTeam, homeTeam] = parseMatchup(matchup);
-      const rowTeamAbbrev = String(getValH(row, 'TEAM_ABBREVIATION') ?? '').trim().toUpperCase();
-      const atParts = matchup.split(/\s+@\s+/);
-      const vsParts = matchup.split(/\s+vs\.\s+/);
-      const isRowTeamAway =
-        (atParts.length === 2 && atParts[0]?.trim().toUpperCase() === rowTeamAbbrev) ||
-        (vsParts.length === 2 && vsParts[1]?.trim().toUpperCase() === rowTeamAbbrev);
-      const isRowTeamHome =
-        (atParts.length === 2 && atParts[1]?.trim().toUpperCase() === rowTeamAbbrev) ||
-        (vsParts.length === 2 && vsParts[0]?.trim().toUpperCase() === rowTeamAbbrev);
-      const homeScore = isRowTeamHome ? pts : undefined;
-      const awayScore = isRowTeamAway ? pts : undefined;
-      return {
-        gameId,
-        gameDate,
-        homeTeam,
-        awayTeam,
-        homeScore,
-        awayScore,
-        status: 'Final',
-      };
-    })
-    .reverse();
+  // Parse enough rows to sort by date; API order is undefined (often chronological = oldest first)
+  const parseRow = (row: Array<string | number>) => {
+    const gameId = String(getValH(row, 'GAME_ID') ?? '');
+    const gameDate = String(getValH(row, 'GAME_DATE') ?? '');
+    const matchup = String(getValH(row, 'MATCHUP') ?? '');
+    const pts = Number(getValH(row, 'PTS')) || 0;
+    const [awayTeam, homeTeam] = parseMatchup(matchup);
+    const rowTeamAbbrev = String(getValH(row, 'TEAM_ABBREVIATION') ?? '').trim().toUpperCase();
+    const atParts = matchup.split(/\s+@\s+/);
+    const vsParts = matchup.split(/\s+vs\.\s+/);
+    const isRowTeamAway =
+      (atParts.length === 2 && atParts[0]?.trim().toUpperCase() === rowTeamAbbrev) ||
+      (vsParts.length === 2 && vsParts[1]?.trim().toUpperCase() === rowTeamAbbrev);
+    const isRowTeamHome =
+      (atParts.length === 2 && atParts[1]?.trim().toUpperCase() === rowTeamAbbrev) ||
+      (vsParts.length === 2 && vsParts[0]?.trim().toUpperCase() === rowTeamAbbrev);
+    const homeScore = isRowTeamHome ? pts : undefined;
+    const awayScore = isRowTeamAway ? pts : undefined;
+    return {
+      gameId,
+      gameDate,
+      homeTeam,
+      awayTeam,
+      homeScore,
+      awayScore,
+      status: 'Final' as const,
+    };
+  };
+
+  const parsed = rowSet.slice(0, Math.max(maxGames, 30)).map((row: Array<string | number>) => parseRow(row));
+  // Use the N most recent games by date (parse so "MMM DD, YYYY" and other formats sort correctly)
+  const toDateMs = (d: string) => {
+    const t = d ? new Date(d).getTime() : 0;
+    return Number.isNaN(t) ? 0 : t;
+  };
+  const games: GameSummary[] = parsed
+    .sort((a, b) => toDateMs(b.gameDate) - toDateMs(a.gameDate))
+    .slice(0, maxGames);
 
   if (process.env.NODE_ENV === 'development') {
     console.log('[gamelog] fetchTeamGameLog(teamId=%s): parsed %s games, headers=%s', teamId, games.length, headers?.length ? headers.slice(0, 8) : []);

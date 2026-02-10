@@ -3,14 +3,6 @@ import { fetchBoxScore, fetchTeamGameLog, fetchTeamRoster } from './gamelog';
 import { InjuryEntry } from './types';
 import { getCached, setCached, CacheKeys, CACHE_TTL } from '../cache';
 
-const POSITION_ORDER: Record<string, number> = {
-  PG: 1,
-  SG: 2,
-  SF: 3,
-  PF: 4,
-  C: 5,
-};
-
 type BoxScoreLike = {
   resultSets?: Array<{ name?: string; headers: string[]; rowSet: Array<Array<string | number>> }>;
   resultSet?: { name?: string; headers: string[]; rowSet: Array<Array<string | number>> };
@@ -100,7 +92,7 @@ function getPlayerStatsResultSet(
 /** Statuses that mean we should not list the player in the projected starting 5. */
 const EXCLUDED_FROM_PROJECTED: InjuryEntry['status'][] = ['Out', 'Doubtful', 'Questionable'];
 
-/** True if this player should be excluded from projected lineup (Out, Doubtful, or Questionable). */
+/** True if this player should be excluded from projected lineup (not absent and not "Available": Out, Doubtful, Questionable). */
 function shouldExcludeFromProjectedLineup(player: Player, injuries: InjuryEntry[]): boolean {
   if (!injuries.length) return false;
   const fullName = `${player.firstName} ${player.lastName}`.trim().toLowerCase();
@@ -116,17 +108,19 @@ function shouldExcludeFromProjectedLineup(player: Player, injuries: InjuryEntry[
   return false;
 }
 
-/**
- * Proposed starting 5 from recent games: who started in the team's last few games.
- * Cached per team. Used when the upcoming game has no box score yet.
- */
-async function getRecentStarters(teamId: number): Promise<Player[]> {
-  const cacheKey = CacheKeys.recentStarters(teamId);
-  const cached = await getCached<Player[]>(cacheKey);
-  if (cached && cached.length > 0) return cached;
+/** Games started in recent games (from box score START_POSITION). Cached per team. */
+const CACHE_KEY_GAMES_STARTED = (teamId: number) =>
+  `${CacheKeys.recentStarters(teamId)}:games-started`;
+
+async function getRecentGamesStartedByPlayer(teamId: number): Promise<Map<number, number>> {
+  const cacheKey = CACHE_KEY_GAMES_STARTED(teamId);
+  const cached = await getCached<Array<{ personId: number; gamesStarted: number }>>(cacheKey);
+  if (cached) {
+    return new Map(cached.map((x) => [x.personId, x.gamesStarted]));
+  }
 
   const games = await fetchTeamGameLog(teamId);
-  const byPersonId = new Map<number, { player: Player; startCount: number }>();
+  const byPersonId = new Map<number, number>();
 
   for (const g of games) {
     if (!g.gameId) continue;
@@ -136,48 +130,40 @@ async function getRecentStarters(teamId: number): Promise<Player[]> {
       if (!playerStats) continue;
       const starters = extractStartersFromBoxScore(playerStats, teamId);
       for (const p of starters) {
-        const existing = byPersonId.get(p.personId);
-        if (existing) {
-          existing.startCount += 1;
-        } else {
-          byPersonId.set(p.personId, { player: p, startCount: 1 });
-        }
+        byPersonId.set(p.personId, (byPersonId.get(p.personId) ?? 0) + 1);
       }
     } catch {
       // skip this game
     }
   }
 
-  // Sort by start count only — who actually started most. Don't force one-per-position
-  // or we drop a star (e.g. second guard) in favor of filling a slot.
-  const sorted = [...byPersonId.values()]
-    .sort((a, b) => {
-      if (b.startCount !== a.startCount) return b.startCount - a.startCount;
-      return a.player.personId - b.player.personId; // stable tiebreaker
-    })
-    .map((x) => x.player);
-
-  if (sorted.length > 0) {
-    await setCached(cacheKey, sorted, CACHE_TTL.LINEUPS);
+  const asArray = [...byPersonId.entries()].map(([personId, gamesStarted]) => ({
+    personId,
+    gamesStarted,
+  }));
+  if (asArray.length > 0) {
+    await setCached(cacheKey, asArray, CACHE_TTL.LINEUPS);
   }
-  return sorted;
+  return byPersonId;
 }
 
-/** Top N players who may be in the starting lineup (recent starters, excluding Out/Doubtful/Questionable). Falls back to roster if no recent starter data. */
+/** Top N players by games started (recent games), excluding Out/Doubtful/Questionable. */
 export async function getLineupCandidates(
   teamId: number,
   injuries: InjuryEntry[],
   limit: number = 8
 ): Promise<Player[]> {
-  const recent = await getRecentStarters(teamId);
-  const available = recent.filter((p) => !shouldExcludeFromProjectedLineup(p, injuries));
-  if (available.length >= limit) return available.slice(0, limit);
   const roster = await fetchTeamRoster(teamId);
-  const recentIds = new Set(available.map((p) => p.personId));
-  const fromRoster = roster.filter(
-    (p) => !recentIds.has(p.personId) && !shouldExcludeFromProjectedLineup(p, injuries)
-  );
-  return [...available, ...fromRoster].slice(0, limit);
+  const gamesStartedByPersonId = await getRecentGamesStartedByPlayer(teamId);
+  const sorted = [...roster]
+    .filter((p) => !shouldExcludeFromProjectedLineup(p, injuries))
+    .sort((a, b) => {
+      const sa = gamesStartedByPersonId.get(a.personId) ?? 0;
+      const sb = gamesStartedByPersonId.get(b.personId) ?? 0;
+      if (sb !== sa) return sb - sa;
+      return a.personId - b.personId;
+    });
+  return sorted.slice(0, limit);
 }
 
 export async function fetchProjectedLineup(
@@ -200,35 +186,26 @@ export async function fetchProjectedLineup(
     // Box score not available yet → use proposed lineup from recent games + injuries
   }
 
-  // 2. Proposed starting 5: top 5 by start count, excluding Out/Doubtful/Questionable; fill from roster if needed
-  const recentStarters = await getRecentStarters(teamId);
-  const available = recentStarters.filter((p) => !shouldExcludeFromProjectedLineup(p, injuries));
-  let projected: Player[] = available.slice(0, 5);
-
+  // 2. Proposed starting 5: roster sorted by games started in recent games (desc), exclude Out/Doubtful/Questionable, take top 5
   const roster = await fetchTeamRoster(teamId);
-  if (projected.length < 5) {
-    const selectedIds = new Set(projected.map((p) => p.personId));
-    const rosterCandidates = roster.filter(
-      (p) => !selectedIds.has(p.personId) && !shouldExcludeFromProjectedLineup(p, injuries)
-    );
-    for (const p of rosterCandidates) {
-      if (projected.length >= 5) break;
-      projected.push(p);
-      selectedIds.add(p.personId);
-    }
-  }
+  const gamesStartedByPersonId = await getRecentGamesStartedByPlayer(teamId);
+  const projected = [...roster]
+    .filter((p) => !shouldExcludeFromProjectedLineup(p, injuries))
+    .sort((a, b) => {
+      const sa = gamesStartedByPersonId.get(a.personId) ?? 0;
+      const sb = gamesStartedByPersonId.get(b.personId) ?? 0;
+      if (sb !== sa) return sb - sa;
+      return a.personId - b.personId;
+    })
+    .slice(0, 5);
 
   const jerseyByPersonId = new Map<number, string>(
     roster.filter((p) => p.jerseyNumber).map((p) => [p.personId, p.jerseyNumber!])
   );
-  projected = projected.slice(0, 5).map((p) => ({
+  return projected.map((p) => ({
     ...p,
     jerseyNumber: p.jerseyNumber ?? jerseyByPersonId.get(p.personId),
   }));
-
-  return projected.sort(
-    (a, b) => (POSITION_ORDER[a.position] ?? 99) - (POSITION_ORDER[b.position] ?? 99)
-  );
 }
 
 /** Parse "MIN" from box score (e.g. "32:45" or "32") to decimal minutes for sorting. */
@@ -238,6 +215,50 @@ function parseMinutes(min: string | number | undefined): number {
   if (!s) return 0;
   const [mins, secs] = s.split(':').map((x) => parseInt(x, 10) || 0);
   return mins + secs / 60;
+}
+
+/** All team rows from box score with parsed player and minutes (for aggregating by minutes). */
+function getTeamPlayerRowsWithMinutes(
+  playerStats: { headers: string[]; rowSet: Array<Array<string | number>> },
+  teamId: number
+): Array<{ player: Player; minutes: number }> {
+  const headers = playerStats.headers;
+  const teamIdIndex = headerIndex(headers, 'TEAM_ID');
+  const personIdIndex = headerIndex(headers, 'PLAYER_ID');
+  const playerNameIndex = headerIndex(headers, 'PLAYER_NAME');
+  const positionIndex = headerIndex(headers, 'POSITION');
+  const minIndex =
+    headerIndex(headers, 'MIN') >= 0 ? headerIndex(headers, 'MIN') : headerIndex(headers, 'MINUTES');
+  const jerseyIndex =
+    headerIndex(headers, 'JERSEY_NUM') >= 0
+      ? headerIndex(headers, 'JERSEY_NUM')
+      : headerIndex(headers, 'NUM');
+  if (teamIdIndex < 0 || personIdIndex < 0) return [];
+
+  const nameIdx = playerNameIndex >= 0 ? playerNameIndex : personIdIndex;
+  const teamRows = playerStats.rowSet.filter((row) => Number(row[teamIdIndex]) === Number(teamId));
+  const result: Array<{ player: Player; minutes: number }> = [];
+
+  for (const row of teamRows) {
+    const playerName = String(row[nameIdx] ?? '').trim() || `Player ${row[personIdIndex]}`;
+    const parts = playerName.split(/\s+/);
+    const firstName = parts[0] ?? '';
+    const lastName = parts.slice(1).join(' ') ?? '';
+    const jerseyNumber =
+      jerseyIndex >= 0 && row[jerseyIndex] !== undefined && row[jerseyIndex] !== ''
+        ? String(row[jerseyIndex]).trim()
+        : undefined;
+    const player: Player = {
+      personId: Number(row[personIdIndex]),
+      firstName,
+      lastName,
+      position: positionIndex >= 0 ? String(row[positionIndex] ?? '').trim() : '',
+      ...(jerseyNumber ? { jerseyNumber } : {}),
+    };
+    const minutes = parseMinutes(row[minIndex] as string);
+    result.push({ player, minutes });
+  }
+  return result;
 }
 
 function extractStartersFromBoxScore(
@@ -299,7 +320,12 @@ function extractStartersFromBoxScore(
     });
   }
 
-  return starters.sort(
-    (a, b) => (POSITION_ORDER[a.position] ?? 99) - (POSITION_ORDER[b.position] ?? 99)
-  );
+  // Order by minutes played (desc), not position
+  return starters.sort((a, b) => {
+    const rowA = teamRows.find((r) => Number(r[personIdIndex]) === a.personId);
+    const rowB = teamRows.find((r) => Number(r[personIdIndex]) === b.personId);
+    const minA = minIndex >= 0 && rowA ? parseMinutes(rowA[minIndex] as string) : 0;
+    const minB = minIndex >= 0 && rowB ? parseMinutes(rowB[minIndex] as string) : 0;
+    return minB - minA;
+  });
 }
