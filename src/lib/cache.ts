@@ -73,6 +73,8 @@ export const CacheKeys = {
   schedule: 'nba:schedule',
   standings: 'nba:standings',
   nextGame: 'cavs:next-game',
+  /** Stale copy of next-game (long TTL); returned when NBA returns 429 to avoid failing the page. */
+  nextGameStale: 'cavs:next-game:stale',
   injuries: (teamId: number, date: string) => `nba:injuries:${teamId}:${date}`,
   opponentGames: (teamId: number) => `nba:opponent-games:${teamId}`,
   headToHead: (teamId1: number, teamId2: number) =>

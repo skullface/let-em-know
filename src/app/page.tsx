@@ -5,37 +5,15 @@ import InjuryReport from "@/components/InjuryReport";
 import RecentGames from "@/components/RecentGames";
 import StartingLineupSection from "@/components/StartingLineupSection";
 import HeadToHeadSection from "@/components/HeadToHeadSection";
-
-async function getNextGame(): Promise<NextGameResponse> {
-  // In server components, we can call the API route directly
-  // or use the internal functions. For consistency with native apps,
-  // we'll use the API route.
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    (process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000");
-
-  const res = await fetch(`${baseUrl}/api/next-game`, {
-    next: { revalidate: 300 }, // Revalidate every 5 minutes
-  });
-
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    const detail =
-      typeof data?.detail === "string" ? data.detail : res.statusText;
-    throw new Error(detail || "Failed to fetch next game");
-  }
-
-  return data as NextGameResponse;
-}
+import { getNextGameData } from "@/lib/next-game";
 
 export default async function Home() {
   let nextGame: NextGameResponse;
 
   try {
-    nextGame = await getNextGame();
+    // Call data layer directly (no self-fetch). This avoids an extra HTTP request
+    // and reduces NBA API rate limit pressure in production.
+    nextGame = await getNextGameData();
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown error occurred";
