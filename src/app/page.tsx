@@ -43,10 +43,7 @@ export default async function Home() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <div>
           <h1>Next Cavs game</h1>
-          <p>
-            Oops, there was an error loading data for the next Cavs game.
-            {message}
-          </p>
+          <p>Oops, there was an error loading data: {message}</p>
         </div>
       </div>
     );
