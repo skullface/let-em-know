@@ -71,8 +71,14 @@ export default async function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="text-center text-secondary text-sm mt-24">
-        <p>Last updated: {new Date(nextGame.lastUpdated).toLocaleString()}</p>
+      <footer className="text-secondary text-sm mt-12">
+        <p>
+          Last updated:{" "}
+          {new Date(nextGame.lastUpdated).toLocaleString("en-US", {
+            timeZone: "America/New_York",
+          })}
+          . Not affiliated with the NBA.
+        </p>
       </footer>
     </div>
   );
