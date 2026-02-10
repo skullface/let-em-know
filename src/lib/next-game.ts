@@ -9,7 +9,6 @@ import { fetchStandings, findTeamStandings } from '@/lib/nba/standings';
 import { fetchInjuryReport } from '@/lib/nba/injuries';
 import { normalizeNameForMatch } from '@/lib/nba/names';
 import { fetchTeamGameLog, fetchHeadToHeadGames, getBoxScoreTopPerformers, fetchTeamRoster } from '@/lib/nba/gamelog';
-import { fetchProjectedLineup } from '@/lib/nba/lineups';
 import { getCached, setCached, CacheKeys, CACHE_TTL } from '@/lib/cache';
 import { NextGameResponse, GameSummary, InjuryEntry, Player } from '@/lib/nba/types';
 
@@ -45,12 +44,16 @@ function getTodayInEt(): Date {
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
+/** Max time to wait for fresh data before returning stale or failing. */
+const FETCH_TIMEOUT_MS = 10_000;
+
 /** In-flight promise so concurrent callers share one fetch when cache is cold (reduces NBA API rate limit hits). */
 let nextGamePromise: Promise<NextGameResponse> | null = null;
 
 /**
  * Fetches the next Cavaliers game and all related data. Uses Redis cache when available.
  * Throws if no upcoming game or on fetch error (e.g. NBA rate limit).
+ * On timeout, returns stale cache if available, otherwise throws.
  */
 export async function getNextGameData(): Promise<NextGameResponse> {
   const cached = await getCached<NextGameResponse>(CacheKeys.nextGame);
@@ -64,7 +67,7 @@ export async function getNextGameData(): Promise<NextGameResponse> {
     return nextGamePromise;
   }
 
-  nextGamePromise = (async (): Promise<NextGameResponse> => {
+  const doFetch = (async (): Promise<NextGameResponse> => {
     try {
       if (DEBUG) console.log('[next-game] cache MISS, fetching fresh data');
 
@@ -283,6 +286,26 @@ export async function getNextGameData(): Promise<NextGameResponse> {
       throw err;
     } finally {
       nextGamePromise = null;
+    }
+  })();
+
+  const timeoutPromise = new Promise<NextGameResponse>((_, reject) => {
+    setTimeout(() => reject(new Error('FETCH_TIMEOUT')), FETCH_TIMEOUT_MS);
+  });
+
+  nextGamePromise = (async (): Promise<NextGameResponse> => {
+    try {
+      return await Promise.race([doFetch, timeoutPromise]);
+    } catch (e) {
+      if (e instanceof Error && e.message === 'FETCH_TIMEOUT') {
+        const stale = await getCached<NextGameResponse>(CacheKeys.nextGameStale);
+        if (stale) {
+          if (DEBUG) console.log('[next-game] Request timed out, returning stale cache');
+          return stale;
+        }
+        throw new Error('Request timed out. Please try again in a moment.');
+      }
+      throw e;
     }
   })();
 
