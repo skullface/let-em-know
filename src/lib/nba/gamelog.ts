@@ -120,7 +120,7 @@ export async function fetchTeamGameLog(
     return Number.isNaN(t) ? 0 : t;
   };
   const games: GameSummary[] = parsed
-    .sort((a, b) => toDateMs(b.gameDate) - toDateMs(a.gameDate))
+    .sort((a: GameSummary, b: GameSummary) => toDateMs(b.gameDate) - toDateMs(a.gameDate))
     .slice(0, maxGames);
 
   if (process.env.NODE_ENV === 'development') {
