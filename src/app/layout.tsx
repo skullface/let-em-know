@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Next Ball - Cleveland Cavaliers",
-  description: "Next upcoming game information for the Cleveland Cavaliers",
+  title: "Next Cavs game stats | letemknow.land",
+  description:
+    "Upcoming game information for the Cleveland Cavaliers. Injury reports, starting lineups, last head-to-head matchup, and more.",
 };
 
 export default function RootLayout({
