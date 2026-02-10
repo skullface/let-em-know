@@ -2,16 +2,20 @@ import { NextResponse } from 'next/server';
 import { deleteCached, CacheKeys } from '@/lib/cache';
 import { fetchSchedule } from '@/lib/nba/schedule';
 import { fetchStandings } from '@/lib/nba/standings';
+import { getNextGameData } from '@/lib/next-game';
 
-// This endpoint should be called by a cron job (Vercel Cron or external service)
-// It refreshes cached data according to the refresh strategy
+// This endpoint should be called by a cron job (Vercel Cron or external service).
+// It refreshes cached data and re-warms the next-game cache so user requests are
+// served from cache and never trigger PDF parsing (which fails on Vercel serverless).
 
 export async function GET(request: Request) {
-  // Verify the request is from a cron job (check for authorization header or secret)
   const authHeader = request.headers.get('authorization');
+  const userAgent = request.headers.get('user-agent') ?? '';
   const cronSecret = process.env.CRON_SECRET;
+  const isVercelCron = userAgent === 'vercel-cron/1.0';
+  const hasValidSecret = cronSecret && authHeader === `Bearer ${cronSecret}`;
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!isVercelCron && !hasValidSecret) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -19,22 +23,24 @@ export async function GET(request: Request) {
     const now = new Date();
     const hour = now.getHours();
 
-    // Refresh schedule and standings every 6 hours
     if (hour % 6 === 0) {
       await Promise.all([
         deleteCached(CacheKeys.schedule),
         deleteCached(CacheKeys.standings),
-        deleteCached(CacheKeys.nextGame), // Force refresh of next game
+        deleteCached(CacheKeys.nextGame),
       ]);
 
-      // Pre-fetch to warm cache
+      // Warm schedule and standings
       await Promise.all([fetchSchedule(), fetchStandings()]);
-    }
 
-    // Refresh injury reports more frequently on game days
-    // This would need to check if today is a game day
-    // For now, we'll refresh injuries every 6 hours (non-game day) or 30 min (game day)
-    // The actual refresh logic is handled in the next-game endpoint
+      // Warm next-game cache so the next user request is a cache HIT and never
+      // runs the PDF injury path (avoids @napi-rs/canvas errors on serverless).
+      try {
+        await getNextGameData();
+      } catch (e) {
+        console.warn('[cron] getNextGameData failed (next request may refetch):', e);
+      }
+    }
 
     return NextResponse.json({ success: true, timestamp: now.toISOString() });
   } catch (error) {
