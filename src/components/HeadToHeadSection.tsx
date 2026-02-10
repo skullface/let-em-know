@@ -51,7 +51,7 @@ function TopPerformersBlock({
     gameHighPersonId: number | null,
     valueSuffix: string
   ) => (
-    <ul>
+    <ul className="grid grid-cols-1 gap-2">
       {players.map((p) => (
         <PlayerRow
           key={p.personId}
@@ -88,9 +88,9 @@ function TopPerformersBlock({
     gameHighPersonId: number | null,
     valueSuffix: string
   ) => (
-    <div className="mb-4 last:mb-0">
-      <h4 className="text-sm uppercase text-secondary">{label}</h4>
-      <div className="grid grid-cols-2 gap-12">
+    <div className="mb-6 last:mb-0">
+      <h4 className="sr-only">{label}</h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap- md:gap-12">
         {playerList(homePlayers, gameHighPersonId, valueSuffix)}
         {playerList(awayPlayers, gameHighPersonId, valueSuffix)}
       </div>
@@ -100,7 +100,7 @@ function TopPerformersBlock({
   return (
     <div>
       <h3 className="sr-only">Top performers (last meeting)</h3>
-      <div className="grid grid-cols-2 gap-12">
+      <div className="hidden md:grid grid-cols-2 gap-12">
         <Subheading>{homeLabel}</Subheading>
         <Subheading>{awayLabel}</Subheading>
       </div>

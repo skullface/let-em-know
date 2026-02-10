@@ -1,7 +1,7 @@
 import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-const playerRow = cva("flex justify-between mb-1");
+const playerRow = cva("flex justify-between");
 
 export interface PlayerRowProps {
   playerName: string;
@@ -20,16 +20,10 @@ export default function PlayerRow({
 }: PlayerRowProps) {
   return (
     <li className={playerRow()}>
-      <span className="flex flex-row-reverse gap-3">
-        <span className="flex items-center gap-1.5 text-inherit">
-          {playerName}
-          {highlight && (
-            <span className="rounded-full w-2 h-2 bg-green-500 block" />
-          )}
-        </span>
+      <span className="flex">
         <span
           className={cn(
-            "w-[3ch] font-mono",
+            "w-[3ch] mr-3 font-mono",
             highlight ? "text-green-500" : "text-secondary"
           )}
         >
@@ -39,8 +33,14 @@ export default function PlayerRow({
             <>#</>
           )}
         </span>
+        <span className="flex items-center gap-1.5 text-inherit">
+          {playerName}
+          {highlight && (
+            <span className="rounded-full w-2 h-2 bg-green-500 block" />
+          )}
+        </span>
       </span>
-      <span className={cn("font-mono", highlight && "text-green-500")}>
+      <span className={cn("md:w-fit font-mono", highlight && "text-green-500")}>
         {right}
       </span>
     </li>

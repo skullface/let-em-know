@@ -25,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-surface text-foreground antialiased">
-        <div className="container mx-auto p-8 max-w-3xl">{children}</div>
+        <div className="container mx-auto p-4 md:p-8 max-w-3xl">{children}</div>
       </body>
     </html>
   );

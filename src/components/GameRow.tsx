@@ -56,7 +56,7 @@ export default function GameRow({ game }: GameRowProps) {
       <span className="text-sm text-secondary uppercase">
         {formatGameDate(game.gameDate)}
       </span>
-      <div className="flex justify-between items-center font-mono">
+      <div className="flex flex-col md:flex-row justify-between md:items-center font-mono">
         <span className="flex-1 flex items-center gap-1.5 font-semibold">
           {awayLabel} @ {homeLabel}
           {(result === "W" || result === "L") && (
@@ -66,7 +66,7 @@ export default function GameRow({ game }: GameRowProps) {
             />
           )}
         </span>
-        {scoreText !== null && <span>{scoreText}</span>}
+        {scoreText !== null && <span className="">{scoreText}</span>}
       </div>
     </>
   );

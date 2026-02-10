@@ -33,10 +33,10 @@ export default async function Home() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-24">
+    <div className="grid grid-cols-1 gap-12 md:gap-24">
       <GameCard game={nextGame.game} />
 
-      <main className="grid grid-cols-1 gap-24">
+      <main className="grid grid-cols-1 gap-12 md:gap-24">
         <StandingsTable
           cavaliers={nextGame.standings.cavaliers}
           opponent={nextGame.standings.opponent}
@@ -52,7 +52,6 @@ export default async function Home() {
           cavaliersPlayers={nextGame.projectedLineups.cavaliers}
           opponentPlayers={nextGame.projectedLineups.opponent}
           opponentName={nextGame.game.opponent.teamName}
-          isHome={nextGame.game.isHome}
         />
 
         <RecentGames

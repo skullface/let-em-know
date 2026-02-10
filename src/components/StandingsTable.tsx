@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import { cva } from "class-variance-authority";
 import { StandingsEntry } from "@/lib/nba/types";
 import Section from "@/components/Section";
@@ -48,7 +49,7 @@ export default function StandingsTable({
 }: StandingsTableProps) {
   return (
     <Section title="Standings">
-      <div className="grid grid-cols-2 gap-12">
+      <div className="grid grid-cols-2 gap-6 md:gap-12">
         <StandingsTeam team={cavaliers} label="Cavaliers" />
         <StandingsTeam team={opponent} label={opponent.teamName} />
       </div>
@@ -61,14 +62,27 @@ const RANK_ITEMS: {
     StandingsEntry,
     "leagueRank" | "conferenceRank" | "divisionRank"
   >;
-  label: (team: StandingsEntry) => string;
+  label: (team: StandingsEntry) => ReactNode;
 }[] = [
   { key: "leagueRank", label: () => "in the league" },
   {
     key: "conferenceRank",
-    label: (team) => `in ${team.conference} Conference`,
+    label: (team) => (
+      <>
+        in {team.conference} <span className="md:hidden">Conf.</span>
+        <span className="hidden md:inline">Conference</span>
+      </>
+    ),
   },
-  { key: "divisionRank", label: (team) => `in ${team.division} Division` },
+  {
+    key: "divisionRank",
+    label: (team) => (
+      <>
+        in {team.division} <span className="md:hidden">Div.</span>
+        <span className="hidden md:inline">Division</span>
+      </>
+    ),
+  },
 ];
 
 function StandingsTeam({

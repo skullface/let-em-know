@@ -154,7 +154,7 @@ export default function RecentGames({
 }: RecentGamesProps) {
   return (
     <Section title="Last three games">
-      <div className="grid grid-cols-2 gap-12">
+      <div className="grid grid-cols-2 gap-6 md:gap-12">
         <RecentGamesData
           title="Cavaliers"
           games={cavaliersRecentGames}
