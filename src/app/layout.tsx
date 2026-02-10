@@ -5,11 +5,11 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://letemknow.land"),
   title: "Next Cavs game stats | letemknow.land",
   description:
-    "Upcoming game information for the Cleveland Cavaliers. Injury reports, starting lineups, last head-to-head matchup, and more.",
+    "Upcoming game information for the Cleveland Cavaliers. Injury reports, last head-to-head matchup, and more.",
   openGraph: {
     title: "Next Cavs game stats | letemknow.land",
     description:
-      "Upcoming game information for the Cleveland Cavaliers. Injury reports, starting lineups, last head-to-head matchup, and more.",
+      "Upcoming game information for the Cleveland Cavaliers. Injury reports, last head-to-head matchup, and more.",
     images: ["/og.png"],
   },
   icons: {
