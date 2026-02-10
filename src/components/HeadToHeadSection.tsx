@@ -90,7 +90,7 @@ function TopPerformersBlock({
   ) => (
     <div className="mb-6 last:mb-0">
       <h4 className="sr-only">{label}</h4>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap- md:gap-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 gap- md:gap-12">
         {playerList(homePlayers, gameHighPersonId, valueSuffix)}
         {playerList(awayPlayers, gameHighPersonId, valueSuffix)}
       </div>
