@@ -230,7 +230,7 @@ next-ball/
         GameCard.tsx
         StandingsTable.tsx
         InjuryReport.tsx
-        LineupCard.tsx
+        Starters.tsx, StartingLineupSection.tsx
         BroadcastInfo.tsx
         RecentGames.tsx
     tailwind.config.ts
