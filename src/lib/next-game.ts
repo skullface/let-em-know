@@ -236,13 +236,6 @@ export async function getNextGameData(): Promise<NextGameResponse> {
         };
       }
 
-      const [cavLineupResult, oppLineupResult] = await Promise.allSettled([
-        fetchProjectedLineup(nextGame.gameId, CAVALIERS_TEAM_ID, cavaliersInjuriesEnriched),
-        fetchProjectedLineup(nextGame.gameId, opponent.teamId, opponentInjuriesEnriched),
-      ]);
-      const cavaliersLineup = cavLineupResult.status === 'fulfilled' ? cavLineupResult.value : [];
-      const opponentLineup = oppLineupResult.status === 'fulfilled' ? oppLineupResult.value : [];
-
       const response: NextGameResponse = {
         game: {
           gameId: nextGame.gameId,
@@ -260,7 +253,7 @@ export async function getNextGameData(): Promise<NextGameResponse> {
         },
         standings: { cavaliers: cavaliersStandings, opponent: opponentStandings },
         injuries: { cavaliers: cavaliersInjuriesEnriched, opponent: opponentInjuriesEnriched },
-        projectedLineups: { cavaliers: cavaliersLineup, opponent: opponentLineup },
+        projectedLineups: { cavaliers: [], opponent: [] },
         cavaliersRecentGames: cavaliersRecentGames.slice(0, 3),
         opponentRecentGames: opponentRecentGames.slice(0, 3),
         headToHead,
