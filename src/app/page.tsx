@@ -7,6 +7,9 @@ import StartingLineupSection from "@/components/StartingLineupSection";
 import HeadToHeadSection from "@/components/HeadToHeadSection";
 import { getNextGameData } from "@/lib/next-game";
 
+// Don't run the heavy NBA fetch at build time (avoids 60s timeout). Render on first request
+// and cache the result for 5 min so the site stays fast.
+export const dynamic = "force-dynamic";
 export const revalidate = 300;
 
 export default async function Home() {
