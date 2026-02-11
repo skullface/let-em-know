@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FathomAnalytics } from './fathom';
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-surface text-foreground antialiased">
+        <FathomAnalytics />
         <div className="container mx-auto p-4 md:p-8 max-w-3xl">{children}</div>
       </body>
     </html>
