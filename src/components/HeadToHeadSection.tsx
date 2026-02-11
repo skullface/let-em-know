@@ -51,7 +51,7 @@ function TopPerformersBlock({
     gameHighPersonId: number | null,
     valueSuffix: string
   ) => (
-    <ul className="grid grid-cols-1 gap-1.5">
+    <ul className="grid grid-cols-1 gap-1.5 mb-8">
       {players.map((p) => (
         <PlayerRow
           key={p.personId}
@@ -154,10 +154,14 @@ export default function HeadToHeadSection({
       ) : (
         <>
           {list.map((game, index) => (
-            <div key={game?.gameId || `h2h-${index}`}>
-              <div className="mb-8">
+            <div
+              key={game?.gameId || `h2h-${index}`}
+              className="grid grid-cols-1 gap-8"
+            >
+              <div>
                 <GameRow game={game} />
               </div>
+
               {index === 0 && showTopPerformers && lastHeadToHeadBoxScore && (
                 <TopPerformersBlock
                   box={lastHeadToHeadBoxScore}
