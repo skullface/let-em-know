@@ -6,6 +6,8 @@ import Subheading from "@/components/Subheading";
 import PlayerRow from "@/components/PlayerRow";
 import GameRow from "@/components/GameRow";
 
+const CAVALIERS_TEAM_ID = 1610612739;
+
 interface HeadToHeadSectionProps {
   headToHead: GameSummary[];
   lastHeadToHeadBoxScore: LastH2HBoxScore | null;
@@ -37,8 +39,13 @@ function TopPerformersBlock({
   box: LastH2HBoxScore;
   firstGame: GameSummary;
 }) {
-  const homeLabel = formatTeamName(firstGame.homeTeam);
-  const awayLabel = formatTeamName(firstGame.awayTeam);
+  const cavaliersAreHome = firstGame.homeTeam?.teamId === CAVALIERS_TEAM_ID;
+  const firstLabel = cavaliersAreHome
+    ? formatTeamName(firstGame.homeTeam)
+    : formatTeamName(firstGame.awayTeam);
+  const secondLabel = cavaliersAreHome
+    ? formatTeamName(firstGame.awayTeam)
+    : formatTeamName(firstGame.homeTeam);
 
   const playerList = (
     players: Array<{
@@ -69,16 +76,23 @@ function TopPerformersBlock({
     </ul>
   );
 
+  const firstPts = cavaliersAreHome ? box.homeTopPts : box.awayTopPts;
+  const secondPts = cavaliersAreHome ? box.awayTopPts : box.homeTopPts;
+  const firstReb = cavaliersAreHome ? box.homeTopReb : box.awayTopReb;
+  const secondReb = cavaliersAreHome ? box.awayTopReb : box.homeTopReb;
+  const firstAst = cavaliersAreHome ? box.homeTopAst : box.awayTopAst;
+  const secondAst = cavaliersAreHome ? box.awayTopAst : box.homeTopAst;
+
   const renderStatColumn = (
     label: string,
-    homePlayers: Array<{
+    firstPlayers: Array<{
       playerName: string;
       personId: number;
       value: number;
       jerseyNumber?: string;
       position?: string;
     }>,
-    awayPlayers: Array<{
+    secondPlayers: Array<{
       playerName: string;
       personId: number;
       value: number;
@@ -91,8 +105,8 @@ function TopPerformersBlock({
     <div className="mb-6 last:mb-0">
       <h4 className="sr-only">{label}</h4>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 gap- md:gap-12">
-        {playerList(homePlayers, gameHighPersonId, valueSuffix)}
-        {playerList(awayPlayers, gameHighPersonId, valueSuffix)}
+        {playerList(firstPlayers, gameHighPersonId, valueSuffix)}
+        {playerList(secondPlayers, gameHighPersonId, valueSuffix)}
       </div>
     </div>
   );
@@ -101,27 +115,27 @@ function TopPerformersBlock({
     <div>
       <h3 className="sr-only">Top performers (last meeting)</h3>
       <div className="hidden md:grid grid-cols-2 gap-12">
-        <Subheading>{homeLabel}</Subheading>
-        <Subheading>{awayLabel}</Subheading>
+        <Subheading>{firstLabel}</Subheading>
+        <Subheading>{secondLabel}</Subheading>
       </div>
       {renderStatColumn(
         "Points",
-        box.homeTopPts,
-        box.awayTopPts,
+        firstPts,
+        secondPts,
         box.gameHighPtsPersonId ?? null,
         "pts"
       )}
       {renderStatColumn(
         "Rebounds",
-        box.homeTopReb,
-        box.awayTopReb,
+        firstReb,
+        secondReb,
         box.gameHighRebPersonId ?? null,
         "reb"
       )}
       {renderStatColumn(
         "Assists",
-        box.homeTopAst,
-        box.awayTopAst,
+        firstAst,
+        secondAst,
         box.gameHighAstPersonId ?? null,
         "ast"
       )}
