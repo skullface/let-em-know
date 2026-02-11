@@ -51,7 +51,7 @@ export default function GameCard({ game }: GameCardProps) {
       <div className="grid grid-cols-2 gap-12 mb-8">
         <div className="flex flex-col gap-0.5">
           <h2 className="font-bold">
-            Cavaliers {game.isHome ? "vs" : "@"} {game.opponent.teamName}
+            Cavaliers {game.isHome ? "vs." : "@"} {game.opponent.teamName}
           </h2>
           <span>{game.location}</span>
         </div>
