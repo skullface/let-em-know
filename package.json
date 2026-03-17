@@ -23,7 +23,7 @@
     "date-fns": "^4.1.0",
     "dommatrix": "^0.1.1",
     "fathom-client": "^3.7.2",
-    "next": "^16.1.6",
+    "next": "^16.1.7",
     "pdf-parse": "^2.2.2",
     "postcss": "^8.5.6",
     "react": "^19.2.4",
